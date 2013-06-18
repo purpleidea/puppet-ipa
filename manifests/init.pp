@@ -248,7 +248,7 @@ class ipa::server(
 			File["${vardir}/dm.password"],
 			File["${vardir}/admin.password"],
 		],
-		alias => 'ipa-server-install',
+		alias => 'ipa-install',	# same alias as client to prevent both!
 	}
 
 	# check if we changed the dns state after initial install (unsupported)
@@ -283,7 +283,7 @@ class ipa::server(
 		# time (in seconds) and that we have within $tl seconds left!
 		unless => "/usr/bin/klist -s && /usr/bin/test \$(( `/bin/date +%s` - `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$1\" \"\$2}' | /bin/date --file=- +%s` )) -gt 0 && /usr/bin/test \$(( `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$3\" \"\$4}' | /bin/date --file=- +%s` - `/bin/date +%s` )) -gt ${tl}",
 		require => [
-			Exec['ipa-server-install'],
+			Exec['ipa-install'],
 			#File["${vardir}/admin.password"],
 		],
 		alias => 'ipa-server-kinit',
@@ -1019,7 +1019,7 @@ class ipa::client(
 			Package['ipa-client'],
 			File["${vardir}/password"],
 		],
-		alias => 'ipa-client-install',
+		alias => 'ipa-install',	# same alias as server to prevent both!
 	}
 
 	# normally when this resource is created by collection, the password is
