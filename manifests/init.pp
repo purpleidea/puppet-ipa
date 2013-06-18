@@ -529,7 +529,7 @@ define ipa::server::host(
 	$location = '',	# host location (e.g. "Lab 42")
 	$platform = '',	# host hardware platform (e.g. "Lenovo X201")
 	$osstring = '',	# host operating system and version (e.g. "CentOS 6.4")
-	$comment = '',	# host description (e.g. "NFS server")
+	$comments = '',	# host description (e.g. "NFS server")
 
 	# client specific parameters...
 	$admin = false,	# should client get admin tools installed ?
@@ -630,9 +630,9 @@ define ipa::server::host(
 		'' => '',
 		default => "--os='${osstring}'",
 	}
-	$args07 = "${comment}" ? {
+	$args07 = "${comments}" ? {
 		'' => '',
-		default => "--desc='${comment}'",
+		default => "--desc='${comments}'",
 	}
 
 	$arglist = ["${args01}", "${args02}", "${args03}", "${args04}", "${args05}", "${args06}", "${args07}"]
