@@ -151,23 +151,6 @@ class ipa::server(
 		fail('A $domain value is required.')
 	}
 
-	$valid_host_excludes = type($host_excludes) ? {
-		'string' => [$host_excludes],
-		'array' => $host_excludes,
-		'boolean' => $host_excludes ? {
-			# TODO: there's probably a better fqdn match expression
-			# this is an expression to prevent all fqdn deletion...
-			#true => ['^[a-zA-Z0-9\.\-]*$'],
-			true => '^[[:alpha:]]{1}[[:alnum:]-.]*$',
-			default => false,
-		},
-		default => false,	# trigger error...
-	}
-
-	if type($valid_host_excludes) != 'array' {
-		fail('The $host_excludes must be an array.')
-	}
-
 	if $dns {
 		package { ['bind', 'bind-dyndb-ldap']:
 			ensure => present,
@@ -361,6 +344,24 @@ class ipa::server::host::base {
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
+	$host_excludes = $ipa::server::host_excludes
+	$valid_host_excludes = type($host_excludes) ? {
+		'string' => [$host_excludes],
+		'array' => $host_excludes,
+		'boolean' => $host_excludes ? {
+			# TODO: there's probably a better fqdn match expression
+			# this is an expression to prevent all fqdn deletion...
+			#true => ['^[a-zA-Z0-9\.\-]*$'],
+			true => '^[[:alpha:]]{1}[[:alnum:]-.]*$',
+			default => false,
+		},
+		default => false,	# trigger error...
+	}
+
+	if type($valid_host_excludes) != 'array' {
+		fail('The $host_excludes must be an array.')
+	}
+
 	package { 'python-argparse':
 		ensure => present,
 	}
@@ -400,7 +401,7 @@ class ipa::server::host::base {
 	}
 	$fs_chr = ' '
 	$suffix = '.host'
-	$regexp = $ipa::server::valid_host_excludes
+	$regexp = $valid_host_excludes
 
 	# build the clean script
 	file { "${vardir}/clean-hosts.sh":
