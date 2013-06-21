@@ -13,37 +13,44 @@
 #	fs_chr: <%= fs_chr %>
 #	suffix: <%= suffix %>
 #	regexp: <%= regexp.join(' ') %>
+#	ignore: <%= ignore.join(' ') %>
 #
 
 for i in `<%= ls_cmd %> | /bin/awk -F '<%= fs_chr %>' '{print $1}'`; do
 	#echo "$i"
-
-	# this section is essentially an in_array()
 	found=false
-	for j in <%= scope.lookupvar('::ipa::vardir::module_vardir').gsub(/\/$/, '') %>/<%= id_dir %>/*; do
+	# this section is essentially an in_array()
+	for j in <%= scope.lookupvar('::ipa::vardir::module_vardir').gsub(/\/$/, '') %>/<%= id_dir %>/*<%= suffix %>; do
+		[ -e "$j" ] || break	# loop in bash properly
 		#echo "found tag: $j"
-		if [ "$i" == "`basename $j <%= suffix %>`" ]; then
+		# compare against first line of the file
+		n=`/usr/bin/head -1 "$j"`
+		if [ "$i" == "$n" ]; then
 			found=true	# found it -- it's safe
 			break
 		fi
 	done
 
-<% if regexp != [] -%>
-	matched=false
-
-	# quoting the match pattern indicate a string match (bash v3.2+)
-<% regexp.each do |m| -%>
-	if [[ "$i" =~ <%= m %> ]]; then
-		matched=true
+<% if ignore.is_a?(Array) and ignore != [] -%>
+	# check against built in ignores
+<% ignore.each do |x| -%>
+	if [ "$i" == '<%= x %>' ]; then
+		found=true
 	fi
 <% end -%>
 
-	# if not found, and not matched, then it should be removed
-	if ! $found && ! $matched; then
-<% else -%>
-	# if not found, then it should be removed
-	if ! $found; then
 <% end -%>
+<% if regexp.is_a?(Array) and regexp != [] -%>
+	# quoting the match pattern indicate a string match (bash v3.2+)
+<% regexp.each do |m| -%>
+	if [[ "$i" =~ <%= m %> ]]; then
+		found=true
+	fi
+<% end -%>
+
+<% end -%>
+	# if not found, not matched, and not ignored, then it should be removed
+	if ! $found; then
 		# echo "Removing: $i"
 		<%= rm_cmd %>"$i"
 	fi

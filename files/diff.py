@@ -21,7 +21,8 @@
 #	$ ipa host-show 'foo.example.com' --all --raw | cut -b 3-
 #
 # EXAMPLE:
-#	$ ./diff.py ${valid_hostname} ${args} && echo TRUE || echo FALSE
+#	$ ./diff.py ${valid_hostname} ${args} --rtype host && echo TRUE || echo FALSE
+#	$ ./diff.py ${valid_service} ${args} --rtype service && echo TRUE || echo FALSE
 #
 # where ${} are puppet variables...
 #
@@ -47,17 +48,6 @@ def unicodeize(x):
 		return unicode(x)
 	else:
 		return x
-
-# verify each of these keys matches
-verify = [
-	'macaddress',
-	'sshpubkeyfp',
-	'l',
-	'nshostlocation',
-	'nshardwareplatform',
-	'nsosversion',
-	'description',
-]
 
 def process_macaddress(x):
 	if x is None: return None	# pass through the none's
@@ -85,37 +75,74 @@ def process_sshpubkeyfp(x):
 
 	return result
 
-# "adjust" each of these keys somehow...
-process = {
-	# NOTE: all the list types need a process function to noneify empties
-	'macaddress': process_macaddress,
-	'sshpubkeyfp': process_sshpubkeyfp,
-}
+def process_ipakrbauthzdata(x):
+	# TODO: is it possible that instead of (u'NONE',) some return None ?
+	if x is None: return None	# pass through the none's
+	if x == []: return None		# empties show up as 'None' in freeipa
+	return x
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('hostname', action='store')	# positional arg
+parser.add_argument('primarykey', action='store')	# positional arg
 parser.add_argument('--debug', dest='debug', action='store_true', default=False)
 parser.add_argument('--not', dest='n', action='store_true', default=False)
+parser.add_argument('--rtype', dest='rtype', action='store', required=True, choices=['host', 'service'])	# resource type
 
 # this is a mapping with dest being the --raw key to look for the data!
+
+#
+#	host rtype arguments
+#
 parser.add_argument('--macaddress', dest='macaddress', action='append', default=[])	# list
 # this is actually part of DNS, ignore it...
 #parser.add_argument('--ip-address', dest='ip?', action='store')
-
 parser.add_argument('--sshpubkey', dest='sshpubkeyfp', action='append', default=[])	# list
-
 parser.add_argument('--locality', dest='l', action='store')
 parser.add_argument('--location', dest='nshostlocation', action='store')
 parser.add_argument('--platform', dest='nshardwareplatform', action='store')
 parser.add_argument('--os', dest='nsosversion', action='store')
 parser.add_argument('--desc', dest='description', action='store')
 
+#
+#	service rtype arguments
+#
+parser.add_argument('--pac-type', dest='ipakrbauthzdata', action='append', default=[])
+
+
 args = parser.parse_args()
+
+if args.rtype == 'host':
+	# verify each of these keys matches
+	verify = [
+		'macaddress',
+		'sshpubkeyfp',
+		'l',
+		'nshostlocation',
+		'nshardwareplatform',
+		'nsosversion',
+		'description',
+	]
+
+	# "adjust" each of these keys somehow...
+	process = {
+		# NOTE: all the list types need a process function to noneify empties
+		'macaddress': process_macaddress,
+		'sshpubkeyfp': process_sshpubkeyfp,
+	}
+elif args.rtype == 'service':
+	verify = [
+		'ipakrbauthzdata',
+	]
+	process = {
+		'ipakrbauthzdata': process_ipakrbauthzdata,
+	}
 
 try:
 	#output = ipalib.api.Command.host_show(fqdn=unicode(args.hostname))
-	output = ipalib.api.Command.host_show(unicode(args.hostname))
+	if args.rtype == 'host':
+		output = ipalib.api.Command.host_show(unicode(args.primarykey))
+	elif args.rtype == 'service':
+		output = ipalib.api.Command.service_show(unicode(args.primarykey))
 except ipalib.errors.NotFound, e:
 	if args.debug:
 		print >> sys.stderr, 'Not found'
@@ -129,9 +156,15 @@ if args.debug:
 	print result
 
 # NOTE: a lot of places you'll see [0] because everything is wrapped in tuples!
-x = unicode(args.hostname.lower())
-y = unicode(result.get('fqdn', '')[0].lower())
-assert x == y, "FQDN does not match!"	# verify we got the right fqdn
+if args.rtype == 'host':
+	# TODO: should we drop the .lower() checks ?
+	x = unicode(args.primarykey.lower())
+	y = unicode(result.get('fqdn', '')[0].lower())
+elif args.rtype == 'service':
+	x = unicode(args.primarykey)
+	y = unicode(result.get('krbprincipalname', '')[0])
+
+assert x == y, "Primary key does not match!"	# verify we got the right pk...
 # loop through all the keys to validate
 for i in verify:
 	#print i, getattr(args, i)

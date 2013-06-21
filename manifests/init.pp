@@ -129,6 +129,7 @@ class ipa::server(
 	# remember that you are matching against the fqdn's, which have dots...
 	# a value of true, will automatically add the * character to match all.
 	$host_excludes = [],		# never purge these host excludes...
+	$service_excludes = [],		# never purge these service excludes...
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
 	$FW = '$FW'			# make using $FW in shorewall easier...
@@ -137,6 +138,7 @@ class ipa::server(
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
+	$valid_hostname = "${hostname}"		# TODO: validate ?
 	$valid_domain = downcase($domain)	# TODO: validate ?
 	$valid_realm = $realm ? {
 		'' => upcase($valid_domain),
@@ -145,6 +147,10 @@ class ipa::server(
 	$valid_email = $email ? {
 		'' => "root@${valid_domain}",
 		default => "${email}",
+	}
+
+	if "${valid_hostname}" == '' {
+		fail('A $hostname value is required.')
 	}
 
 	if "${valid_domain}" == '' {
@@ -160,6 +166,24 @@ class ipa::server(
 
 	package { 'ipa-server':
 		ensure => present,
+	}
+
+	package { 'python-argparse':		# used by diff.py
+		ensure => present,
+	}
+
+	file { "${vardir}/diff.py":		# used by a few child classes
+		source => 'puppet:///modules/ipa/diff.py',
+		owner => root,
+		group => nobody,
+		mode => 700,			# u=rwx
+		backup => false,		# don't backup to filebucket
+		ensure => present,
+		require => [
+			Package['ipa-server'],
+			Package['python-argparse'],
+			File["${vardir}/"],
+		],
 	}
 
 	# store the passwords in text files instead of having them on cmd line!
@@ -185,7 +209,7 @@ class ipa::server(
 	}
 
 	# these are the arguments to ipa-server-install in the prompted order
-	$args01 = "--hostname='${hostname}.${valid_domain}'"
+	$args01 = "--hostname='${valid_hostname}.${valid_domain}'"
 	$args02 = "--domain='${valid_domain}'"
 	$args03 = "--realm='${valid_realm}'"
 	#$args04 = "--ds-password='${dm_password}'"	# Directory Manager
@@ -333,7 +357,7 @@ class ipa::server(
 
 	if $self {
 		# include self, so that it doesn't get purged...
-		ipa::server::host { "${hostname}.${valid_domain}":
+		ipa::server::host { "${valid_hostname}.${valid_domain}":
 		}
 	}
 }
@@ -362,23 +386,6 @@ class ipa::server::host::base {
 		fail('The $host_excludes must be an array.')
 	}
 
-	package { 'python-argparse':
-		ensure => present,
-	}
-
-	file { "${vardir}/diff.py":
-		source => 'puppet:///modules/ipa/diff.py',
-		owner => root,
-		group => nobody,
-		mode => 700,			# u=rwx
-		backup => false,		# don't backup to filebucket
-		ensure => present,
-		require => [
-			Package['python-argparse'],
-			File["${vardir}/"],
-		],
-	}
-
 	# directory of system tags which should exist (as managed by puppet)
 	file { "${vardir}/hosts/":
 		ensure => directory,		# make sure this is a directory
@@ -402,6 +409,7 @@ class ipa::server::host::base {
 	$fs_chr = ' '
 	$suffix = '.host'
 	$regexp = $valid_host_excludes
+	$ignore = []	# TODO: i could add the freeipa host here...
 
 	# build the clean script
 	file { "${vardir}/clean-hosts.sh":
@@ -531,6 +539,8 @@ define ipa::server::host(
 	$platform = '',	# host hardware platform (e.g. "Lenovo X201")
 	$osstring = '',	# host operating system and version (e.g. "CentOS 6.4")
 	$comments = '',	# host description (e.g. "NFS server")
+
+	#$hosts = [],		# TODO: add hosts managed by support
 
 	# client specific parameters...
 	$admin = false,	# should client get admin tools installed ?
@@ -670,7 +680,7 @@ define ipa::server::host(
 	# be erased. please keep in mind that on accidental notification, or on
 	# system rebuild, the differing changes will be erased.
 	file { "${vardir}/hosts/${valid_fqdn}.host":
-		content => "${valid_fqdn} ${args}\n",
+		content => "${valid_fqdn}\n${args}\n",
 		owner => root,
 		group => nobody,
 		mode => 600,	# u=rw,go=
@@ -679,7 +689,7 @@ define ipa::server::host(
 	}
 
 	file { "${vardir}/hosts/${valid_fqdn}.qhost":
-		content => "${valid_fqdn} ${qargs}\n",
+		content => "${valid_fqdn}\n${qargs}\n",
 		owner => root,
 		group => nobody,
 		mode => 600,	# u=rw,go=
@@ -790,13 +800,14 @@ define ipa::server::host(
 			onlyif => "${exists}",
 			unless => $watch ? {
 				false => undef,	# don't run the diff checker...
-				default => "${exists} && ${vardir}/diff.py '${valid_fqdn}' ${args}",
+				default => "${exists} && ${vardir}/diff.py '${valid_fqdn}' --rtype='host' ${args}",
 			},
 			before => "${qargs}" ? {	# only if exec exists !
 				'' => undef,
 				default => Exec["ipa-server-host-qmod-${name}"],
 			},
 			require => [
+				File["${vardir}/diff.py"],
 				Exec['ipa-server-kinit'],
 				Exec["ipa-server-host-add-${name}"],
 				File["${vardir}/hosts/sshpubkeys/${name}/"],
@@ -1062,7 +1073,7 @@ define ipa::client::host(
 	$shorewall = false,
 	$zone = 'net',
 	$allow = 'all',
-	$ensure = present
+	$ensure = present	# TODO
 ) {
 	# $name should be a fqdn, split it into the $hostname and $domain args!
 	# NOTE: a regexp wizard could possibly write something to match better!
@@ -1129,6 +1140,541 @@ class ipa::client::host::deploy(
 		}
 	} else {
 		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
+			server => "${server}",	# override...
+		}
+	}
+}
+
+class ipa::server::service::base {
+	include ipa::server
+	include ipa::vardir
+	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+
+	# by default, the following services get installed with freeipa:
+	# DNS/ipa.example.com@EXAMPLE.COM
+	# dogtagldap/ipa.example.com@EXAMPLE.COM
+	# HTTP/ipa.example.com@EXAMPLE.COM
+	# ldap/ipa.example.com@EXAMPLE.COM
+	# since we don't want to purge them, we need to exclude them...
+	$prefix = ['DNS', 'dogtagldap', 'HTTP', 'ldap']
+	$valid_hostname = $ipa::server::valid_hostname
+	$valid_domain = $ipa::server::valid_domain
+	$valid_realm = $ipa::server::valid_realm
+	$append = "/${valid_hostname}.${valid_domain}@${valid_realm}"
+	$service_always_ignore = suffix($prefix, $append)
+
+	$service_excludes = $ipa::server::service_excludes
+	$valid_service_excludes = type($service_excludes) ? {
+		'string' => [$service_excludes],
+		'array' => $service_excludes,
+		'boolean' => $service_excludes ? {
+			# TODO: there's probably a better fqdn match expression
+			# this is an expression to prevent all fqdn deletion...
+			#true => ['^[a-zA-Z0-9\.\-]*$'],
+			true => '^[[:alpha:]]{1}[[:alnum:]-.]*$',
+			default => false,
+		},
+		default => false,	# trigger error...
+	}
+
+	if type($valid_service_excludes) != 'array' {
+		fail('The $service_excludes must be an array.')
+	}
+
+	# directory of system tags which should exist (as managed by puppet)
+	file { "${vardir}/services/":
+		ensure => directory,		# make sure this is a directory
+		recurse => true,		# recursively manage directory
+		purge => true,			# purge all unmanaged files
+		force => true,			# also purge subdirs and links
+		owner => root, group => nobody, mode => 600, backup => false,
+		notify => Exec['ipa-clean-services'],
+		require => File["${vardir}/"],
+	}
+
+	# these are template variables for the clean.sh.erb script
+	$id_dir = 'services'
+	$ls_cmd = '/usr/bin/ipa service-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^krbprincipalname:" | /bin/cut -b 18-'	# show ipa services
+	$rm_cmd = '/usr/bin/ipa service-del '	# delete ipa services
+	$fs_chr = ' '
+	$suffix = '.service'
+	$regexp = $valid_service_excludes
+	$ignore = $service_always_ignore
+
+	# build the clean script
+	file { "${vardir}/clean-services.sh":
+		content => template('ipa/clean.sh.erb'),
+		owner => root,
+		group => nobody,
+		mode => 700,			# u=rwx
+		backup => false,		# don't backup to filebucket
+		ensure => present,
+		require => File["${vardir}/"],
+	}
+
+	# run the cleanup
+	exec { "${vardir}/clean-services.sh":
+		logoutput => on_failure,
+		refreshonly => true,
+		require => [
+			Exec['ipa-server-kinit'],
+			File["${vardir}/clean-services.sh"],
+		],
+		alias => 'ipa-clean-services',
+	}
+}
+
+define ipa::server::service(
+	$service = '',		# nfs, HTTP, ldap
+	$host = '',		# should match $name of ipa::server::host
+	$domain = '',		# must be the empty string by default
+	$realm = '',
+	$principal = '',	# after all that, you can override principal...
+	$server = '',		# where the client will find the ipa server...
+
+	# args
+	$pactype = [],		# bad values are silently discarded, [] is NONE
+
+	#$hosts = [],		# TODO: add hosts managed by support
+
+	# special parameters...
+	$watch = true,	# manage all changes to this resource, reverting others
+	$modify = true,	# modify this resource on puppet changes or not ?
+	$comment = '',
+	$ensure = present	# TODO
+) {
+	include ipa::server
+	include ipa::server::service::base
+	include ipa::vardir
+	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+
+	$dns = $ipa::server::dns			# boolean from main obj
+
+	# TODO: a better regexp magician could probably do a better job :)
+	# nfs/nfs.example.com@EXAMPLE.COM
+	$r = '^([a-zA-Z][a-zA-Z0-9]*)(/([a-z][a-z\.\-]*)(@([A-Z][A-Z\.\-]*)){0,1}){0,1}$'
+
+	$a = regsubst("${name}", $r, '\1')	# service (nfs)
+	$b = regsubst("${name}", $r, '\3')	# fqdn (nfs.example.com)
+	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM
+
+	# service: first try to get value from arg, then fall back to $a (name)
+	$valid_service = "${service}" ? {
+		'' => "${a}",				# get from $name regexp
+		default => "${service}",
+	}
+	if "${valid_service}" == '' {
+		# NOTE: if we see this message it might be a regexp pattern bug
+		fail('The $service must be specified.')
+	}
+
+	# host: first try to get value from arg, then fall back to $b
+	# this is not necessarily the fqdn, but it could be. both are possible!
+	$valid_host = "${host}" ? {
+		'' => "${b}",				# get from $name regexp
+		default => "${host}",
+	}
+	# this error will probably prevent a later error in $valid_domain
+	if "${valid_host}" == '' {
+		fail('The $host must be specified.')
+	}
+
+	# parse the fqdn from $valid_host
+	$r2 = '^([a-z][a-z0-9\-]*)(\.{0,1})([a-z0-9\.\-]*)$'
+	#$h = regsubst("${valid_host}", $r2, '\1')	# hostname
+	$d = regsubst("${valid_host}", $r2, '\3')	# domain
+
+	$valid_domain = delete("${valid_host}", '.') ? {
+		"${valid_host}" => "${domain}" ? {	# no dots, not an fqdn!
+			'' => "${ipa::server::domain}" ? {	# NOTE: server!
+				'' => "${::domain}",	# default to global val
+				default => "${ipa::server::domain}",	# main!
+			},
+			default => "${domain}",
+		},
+		default => "${domain}" ? {		# dots, it's an fqdn...
+			'' => "${d}",	# okay, used parsed value, it had dots!
+			"${d}" => "${domain}",		# they match, okay phew
+			default => '',	# no match, set '' to trigger an error!
+		},
+	}
+
+	# this error condition is very important because '' is used as trigger!
+	if "${valid_domain}" == '' {
+		fail('The $domain must be specified.')
+	}
+
+	$valid_fqdn = delete("${valid_host}", '.') ? {	# does it have any dots
+		"${valid_host}" => "${valid_host}.${valid_domain}",
+		default => "${valid_host}",		# it had dot(s) present
+	}
+
+	$valid_realm = "${realm}" ? {
+		'' => "${c}" ? {			# get from $name regexp
+			'' => upcase($valid_domain),	# a backup plan default
+			default => "${c}",		# got from $name regexp
+		},
+		default => "${realm}",
+	}
+
+	# sanity checking, this should probably not happen
+	if "${valid_realm}" == '' {
+		fail('The $realm must be specified.')
+	}
+
+	$valid_server = "${server}" ? {
+		'' => "${::hostname}.${::domain}",
+		default => "${server}",
+	}
+
+	# sanity checking, this should probably not happen
+	if "${valid_server}" == '' {
+		fail('The $server must be specified.')
+	}
+
+	$valid_principal = "${principal}" ? {
+		'' => "${valid_service}/${valid_fqdn}@${valid_realm}",
+		default => "${principal}",		# just do what you want
+	}
+
+	if $watch and (! $modify) {
+		fail('You must be able to $modify to be able to $watch.')
+	}
+
+	$pactype_valid = ['MS-PAC', 'PAD']	# or 'NONE'
+	$pactype_array = type($pactype) ? {
+		'array' => $pactype,
+		'string' => ["${pactype}"],
+		default => [],			# will become 'NONE'
+	}
+	$valid_pactype = split(inline_template('<%= ((pactype_array.delete_if {|x| not pactype_valid.include?(x)}.length == 0) ? ["NONE"] : pactype_array.delete_if {|x| not pactype_valid.include?(x)}).join("#") %>'), '#')
+
+	$args01 = sprintf("--pac-type='%s'", join($valid_pactype, ','))
+
+	$arglist = ["${args01}"]	# future expansion available :)
+	$args = join(delete($arglist, ''), ' ')
+
+	# switch the slashes for a file name friendly character
+	$valid_principal_file = regsubst("${valid_principal}", '/', '-', 'G')
+	file { "${vardir}/services/${valid_principal_file}.service":
+		content => "${valid_principal}\n${args}\n",
+		owner => root,
+		group => nobody,
+		mode => 600,	# u=rw,go=
+		require => File["${vardir}/services/"],
+		ensure => present,
+	}
+
+	$exists = "/usr/bin/ipa service-show '${valid_principal}' > /dev/null 2>&1"
+	$force = "${args}" ? {			# if args is empty
+		'' => '--force',		# we have no args!
+		default => "${args} --force",	# pixel perfect...
+	}
+	$fargs = $dns ? {			# without the dns,
+		true => "${force}",		# we don't need to
+		default => "${args}",		# force everything
+	}
+	# NOTE: this runs when no service is present...
+	exec { "ipa-server-service-add-${name}":	# alias
+		# this has to be here because the command string gets too long
+		# for a puppet $name var and strange things start to happen...
+		command => "/usr/bin/ipa service-add '${valid_principal}' ${fargs}",
+		logoutput => on_failure,
+		unless => "${exists}",
+		require => $dns ? {
+			true => [
+				Exec['ipa-server-kinit'],
+			],
+			default => [
+				Exec['ipa-dns-check'],	# avoid --force errors!
+				Exec['ipa-server-kinit'],
+			],
+		},
+	}
+
+	# NOTE: this runs when we detect that the attributes don't match (diff)
+	if $modify and ("${args}" != '') {	# if there are changes to do...
+		#exec { "/usr/bin/ipa service-mod '${valid_principal}' ${args}":
+		exec { "ipa-server-service-mod-${name}":
+			command => "/usr/bin/ipa service-mod '${valid_principal}' ${args}",
+			logoutput => on_failure,
+			refreshonly => $watch ? {
+				false => true,		# when not watching, we
+				default => undef,	# refreshonly to change
+			},
+			subscribe => $watch ? {
+				false => File["${vardir}/services/${valid_principal_file}.service"],
+				default => undef,
+			},
+			onlyif => "${exists}",
+			unless => $watch ? {
+				false => undef,	# don't run the diff checker...
+				default => "${exists} && ${vardir}/diff.py '${valid_principal}' --rtype='service' ${args}",
+			},
+			require => [
+				File["${vardir}/diff.py"],
+				Exec['ipa-server-kinit'],
+				Exec["ipa-server-service-add-${name}"],
+			],
+			#alias => "ipa-server-service-mod-${name}",
+		}
+	}
+
+	@@ipa::client::service { "${name}":	# this is usually the principal
+		# NOTE: this should set all the client args it can safely assume
+		service => "${valid_service}",
+		host => "${valid_host}",
+		domain => "${valid_domain}",
+		realm => "${valid_realm}",
+		principal => "${valid_principal}",
+		server => "${valid_server}",
+		comment => "${comment}",
+		ensure => $ensure,
+		require => Ipa::Client::Host["${name}"],	# should match!
+		tag => "${name}",					# bonus
+	}
+}
+
+# FIXME: if this resource is removed, how do we revoke the key from the keytab?
+# FIXME: it seems that after a kdestroy/kinit cycle happens, it is then revoked
+# FIXME: a freeipa expert should verify and confirm that it's safe/ok this way!
+# this runs ipa-getkeytab magic, to setup the keytab, for a service on a client
+define ipa::client::service(
+	$service = '',		# nfs, HTTP, ldap
+	$host = '',		# should match $name of ipa::client::host
+	$domain = '',		# must be the empty string by default
+	$realm = '',
+	$principal = '',	# after all that, you can override principal...
+	$server = '',		# where the client will find the ipa server...
+	$keytab = '',		# defaults to /etc/krb5.keytab
+	$comment = '',
+	$ensure = present
+) {
+	include ipa::vardir
+	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+
+	# NOTE: much of the following code is almost identical to that up above
+	# TODO: a better regexp magician could probably do a better job :)
+	# nfs/nfs.example.com@EXAMPLE.COM
+	$r = '^([a-zA-Z][a-zA-Z0-9]*)(/([a-z][a-z\.\-]*)(@([A-Z][A-Z\.\-]*)){0,1}){0,1}$'
+
+	$a = regsubst("${name}", $r, '\1')	# service (nfs)
+	$b = regsubst("${name}", $r, '\3')	# fqdn (nfs.example.com)
+	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM
+
+	# service: first try to get value from arg, then fall back to $a (name)
+	$valid_service = "${service}" ? {
+		'' => "${a}",				# get from $name regexp
+		default => "${service}",
+	}
+	if "${valid_service}" == '' {
+		# NOTE: if we see this message it might be a regexp pattern bug
+		fail('The $service must be specified.')
+	}
+
+	# host: first try to get value from arg, then fall back to $b
+	# this is not necessarily the fqdn, but it could be. both are possible!
+	$valid_host = "${host}" ? {
+		'' => "${b}",				# get from $name regexp
+		default => "${host}",
+	}
+	# this error will probably prevent a later error in $valid_domain
+	if "${valid_host}" == '' {
+		fail('The $host must be specified.')
+	}
+
+	# parse the fqdn from $valid_host
+	$r2 = '^([a-z][a-z0-9\-]*)(\.{0,1})([a-z0-9\.\-]*)$'
+	#$h = regsubst("${valid_host}", $r2, '\1')	# hostname
+	$d = regsubst("${valid_host}", $r2, '\3')	# domain
+
+	$valid_domain = delete("${valid_host}", '.') ? {
+		"${valid_host}" => "${domain}" ? {	# no dots, not an fqdn!
+			'' => "${ipa::client::domain}" ? {	# NOTE: client!
+				'' => "${::domain}",	# default to global val
+				default => "${ipa::client::domain}",	# main!
+			},
+			default => "${domain}",
+		},
+		default => "${domain}" ? {		# dots, it's an fqdn...
+			'' => "${d}",	# okay, used parsed value, it had dots!
+			"${d}" => "${domain}",		# they match, okay phew
+			default => '',	# no match, set '' to trigger an error!
+		},
+	}
+
+	# this error condition is very important because '' is used as trigger!
+	if "${valid_domain}" == '' {
+		fail('The $domain must be specified.')
+	}
+
+	$valid_fqdn = delete("${valid_host}", '.') ? {	# does it have any dots
+		"${valid_host}" => "${valid_host}.${valid_domain}",
+		default => "${valid_host}",		# it had dot(s) present
+	}
+
+	$valid_realm = "${realm}" ? {
+		'' => "${c}" ? {			# get from $name regexp
+			'' => upcase($valid_domain),	# a backup plan default
+			default => "${c}",		# got from $name regexp
+		},
+		default => "${realm}",
+	}
+
+	# sanity checking, this should probably not happen
+	if "${valid_realm}" == '' {
+		fail('The $realm must be specified.')
+	}
+
+	$valid_server = "${server}" ? {
+		'' => "${ipa::client::valid_server}",
+		default => "${server}",
+	}
+
+	# sanity checking, this should probably not happen
+	if "${valid_server}" == '' {
+		fail('The $server must be specified.')
+	}
+
+	$valid_principal = "${principal}" ? {
+		'' => "${valid_service}/${valid_fqdn}@${valid_realm}",
+		default => "${principal}",		# just do what you want
+	}
+
+	$valid_keytab = "${keytab}" ? {			# TODO: validate
+		'' => '/etc/krb5.keytab',
+		default => "${keytab}",
+	}
+
+	# TODO: it would be great to put this kinit code into a single class to
+	# be used by each service, but it's not easily possible if puppet stops
+	# us from declaring identical class objects when they're seen as dupes!
+	# there is ensure_resource, but it's a hack and class might not work...
+	# NOTE: i added a lifetime of 1 hour... no sense needing any longer
+	$rr = "krbtgt/${valid_realm}@${valid_realm}"
+	$tl = '900'	# 60*15 => 15 minutes
+	$admin = "host/${valid_fqdn}@${valid_realm}"	# use this principal...
+	exec { "/usr/bin/kinit -k -t '${valid_keytab}' ${admin} -l 1h":
+		logoutput => on_failure,
+		#unless => "/usr/bin/klist -s",	# is there a credential cache
+		# NOTE: we need to check if the ticket has at least a certain
+		# amount of time left. if not, it could expire mid execution!
+		# this should definitely get patched, but in the meantime, we
+		# check that the current time is greater than the valid start
+		# time (in seconds) and that we have within $tl seconds left!
+		unless => "/usr/bin/klist -s && /usr/bin/test \$(( `/bin/date +%s` - `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$1\" \"\$2}' | /bin/date --file=- +%s` )) -gt 0 && /usr/bin/test \$(( `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$3\" \"\$4}' | /bin/date --file=- +%s` - `/bin/date +%s` )) -gt ${tl}",
+		require => [
+			Package['ipa-client'],
+			Exec['ipa-install'],
+			Ipa::Client::Host["${valid_host}"],
+		],
+		alias => "ipa-server-kinit-${name}",
+	}
+
+	$args01 = "--server='${valid_server}'"	# contact this KDC server (ipa)
+	$args02 = "--principal='${valid_principal}'"	# the service principal
+	$args03 = "--keytab='${valid_keytab}'"
+
+	$arglist = ["${args01}", "${args02}", "${args03}"]
+	$args = join(delete($arglist, ''), ' ')
+
+	$kvno_bool = "/usr/bin/kvno -q '${valid_principal}'"
+	exec { "/usr/sbin/ipa-getkeytab ${args}":
+		logoutput => on_failure,
+			# check that the KDC has a valid ticket available there
+			# check that the ticket version no. matches our keytab!
+		unless => "${kvno_bool} && /usr/bin/klist -k -t '${valid_keytab}' | /bin/awk '{print \$4\": kvno = \"\$1}' | /bin/sort | /usr/bin/uniq | /bin/grep -F '${valid_principal}' | /bin/grep -qxF \"`/usr/bin/kvno '${valid_principal}'`\"",
+		require => [
+			# these deps are done in the kinit
+			#Package['ipa-client'],
+			#Exec['ipa-install'],
+			#Ipa::Client::Host["${valid_host}"],
+			Exec["ipa-server-kinit-${name}"],
+		],
+		#alias => "ipa-getkeytab-${name}",
+	}
+}
+
+# NOTE: use this to deploy the exported resource @@ipa::client::service
+class ipa::client::service::deploy(
+	$server = '',
+	$nametag = ''				# pick a tag to collect...
+) {
+
+	# NOTE: the resource collects by fqdn; one good reason to use the fqdn!
+	# sure you can override this by choosing your own $name value, but why?
+	$valid_tag = "${nametag}" ? {
+		'' => "${ipa::client::name}",	# this is a *class* with a name
+		default => "${nametag}",
+	}
+
+	# TODO: if i had more than one arg to decide to override, then i would
+	# have to build a big tree of nested choices... this is one more place
+	# where puppet shows it's really not a mature language yet. oh well...
+	if "${server}" == '' {
+		Ipa::Client::Service <<| tag == "${valid_tag}" |>> {
+		}
+	} else {
+		Ipa::Client::Service <<| tag == "${valid_tag}" |>> {
+			server => "${server}",	# override...
+		}
+	}
+}
+
+# NOTE: use this to deploy all the @@ipa::client::* exported resources on clients
+# the $nametag variable should match the $name value of the server/client::host
+class ipa::client::deploy(
+	$hostname = $::hostname,
+	$domain = $::domain,
+	$server = '',
+	$nametag = ''				# pick a tag to collect...
+) {
+	$valid_domain = downcase($domain)	# TODO: validate ?
+
+	# if $hostname has dots, then assume it's a fqdn, if not, we add $domain
+	$valid_fqdn = delete("${hostname}", '.') ? {
+		"${hostname}" => "${hostname}.${valid_domain}",	# had no dots present
+		default => "${hostname}",			# had dots present...
+	}
+
+	# NOTE: the resource collects by fqdn; one good reason to use the fqdn!
+	# sure you can override this by choosing your own $name value, but why?
+	$valid_host_tag = "${nametag}" ? {		# host version
+		'' => "${valid_fqdn}",
+		default => "${nametag}",
+	}
+
+	$valid_service_tag = "${nametag}" ? {		# service version
+		'' => "${ipa::client::name}",	# this is a *class* with a name
+		default => "${nametag}",
+	}
+
+	# if we decide automatically the tag name, ensure that the two
+	# different methods for determining the values are the same...
+	if "${nametag}" == '' {
+		#if "${valid_fqdn}" != "${ipa::client::name}" {
+		if "${valid_host_tag}" != "${valid_service_tag}" {
+			# NOTE: this is sort of like an assert... is it a bug ?
+			fail('There is an auto $nametag incompatibility.')
+		}
+	}
+
+	# TODO: if i had more than one arg to decide to override, then i would
+	# have to build a big tree of nested choices... this is one more place
+	# where puppet shows it's really not a mature language yet. oh well...
+	if "${server}" == '' {
+		Ipa::Client::Host <<| tag == "${valid_host_tag}" |>> {
+		}
+		Ipa::Client::Service <<| tag == "${valid_service_tag}" |>> {
+		}
+	} else {
+		Ipa::Client::Host <<| tag == "${valid_host_tag}" |>> {
+			server => "${server}",	# override...
+		}
+		Ipa::Client::Service <<| tag == "${valid_service_tag}" |>> {
 			server => "${server}",	# override...
 		}
 	}
