@@ -924,6 +924,7 @@ class ipa::client(
 	$shorewall = false,		# TODO ?
 	$zone = 'net',
 	$allow = 'all',
+	$debug = false,
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
 	include ipa::vardir
@@ -952,6 +953,15 @@ class ipa::client(
 	$valid_name = "${name}" ? {
 		'' => "${hostname}.${domain}",	# defaults to fqdn if empty...
 		default => "${name}",		# this could be fqdn or not...
+	}
+
+	if $debug {
+		# just used for debugging
+		$valid_fqdn = "${hostname}.${valid_domain}"
+		$valid_principal = "host/${valid_fqdn}@${valid_realm}"
+		notify { "ipa-client-host-${name}":
+			message => "Host: '${name}', principal: '${valid_principal}'",
+		}
 	}
 
 	package { 'ipa-client':
@@ -1087,6 +1097,7 @@ define ipa::client::host(
 	$shorewall = false,
 	$zone = 'net',
 	$allow = 'all',
+	$debug = false,
 	$ensure = present	# TODO
 ) {
 	# $name should be a fqdn, split it into the $hostname and $domain args!
@@ -1119,6 +1130,7 @@ define ipa::client::host(
 		shorewall => $shorewall,
 		zone => $zone,
 		allow => $allow,
+		debug => $debug,
 		ensure => $ensure,
 	}
 }
@@ -1129,7 +1141,8 @@ class ipa::client::host::deploy(
 	$hostname = $::hostname,
 	$domain = $::domain,
 	$server = '',
-	$nametag = ''				# pick a tag to collect...
+	$nametag = '',				# pick a tag to collect...
+	$debug = false
 ) {
 	$valid_domain = downcase($domain)	# TODO: validate ?
 
@@ -1151,10 +1164,12 @@ class ipa::client::host::deploy(
 	# where puppet shows it's really not a mature language yet. oh well...
 	if "${server}" == '' {
 		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
+			debug => $debug,
 		}
 	} else {
 		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
 			server => "${server}",	# override...
+			debug => $debug,
 		}
 	}
 }
@@ -1464,6 +1479,7 @@ define ipa::client::service(
 	$server = '',		# where the client will find the ipa server...
 	$keytab = '',		# defaults to /etc/krb5.keytab
 	$comment = '',
+	$debug = false,
 	$ensure = present
 ) {
 	include ipa::vardir
@@ -1563,6 +1579,12 @@ define ipa::client::service(
 		default => "${keytab}",
 	}
 
+	if $debug {
+		notify { "ipa-client-service-${name}":
+			message => "Service: '${name}', principal: '${valid_principal}'",
+		}
+	}
+
 	# TODO: it would be great to put this kinit code into a single class to
 	# be used by each service, but it's not easily possible if puppet stops
 	# us from declaring identical class objects when they're seen as dupes!
@@ -1615,7 +1637,8 @@ define ipa::client::service(
 # NOTE: use this to deploy the exported resource @@ipa::client::service
 class ipa::client::service::deploy(
 	$server = '',
-	$nametag = ''				# pick a tag to collect...
+	$nametag = '',				# pick a tag to collect...
+	$debug = false
 ) {
 
 	# NOTE: the resource collects by fqdn; one good reason to use the fqdn!
@@ -1629,10 +1652,12 @@ class ipa::client::service::deploy(
 	# and it is the $valid_host variable that came from the server service
 	if "${server}" == '' {
 		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
+			debug => $debug,
 		}
 	} else {
 		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
 			server => "${server}",	# override...
+			debug => $debug,
 		}
 	}
 }
@@ -1643,7 +1668,8 @@ class ipa::client::deploy(
 	$hostname = $::hostname,
 	$domain = $::domain,
 	$server = '',
-	$nametag = ''				# pick a tag to collect...
+	$nametag = '',				# pick a tag to collect...
+	$debug = false
 ) {
 	$valid_domain = downcase($domain)	# TODO: validate ?
 
@@ -1667,15 +1693,19 @@ class ipa::client::deploy(
 	# and it is the $valid_host variable that came from the server service
 	if "${server}" == '' {
 		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
+			debug => $debug,
 		}
 		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
+			debug => $debug,
 		}
 	} else {
 		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
 			server => "${server}",	# override...
+			debug => $debug,
 		}
 		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
 			server => "${server}",	# override...
+			debug => $debug,
 		}
 	}
 }
