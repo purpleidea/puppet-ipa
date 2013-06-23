@@ -891,6 +891,7 @@ define ipa::server::host(
 	# NOTE: 'include ipa::client::host::deploy' to deploy the ipa client...
 	@@ipa::client::host { "${name}":	# this is usually the fqdn
 		# NOTE: this should set all the client args it can safely assume
+		domain => $valid_domain,
 		realm => $realm,
 		server => "${valid_server}",
 		password => "${pass}",
@@ -1086,6 +1087,7 @@ class ipa::client(
 
 define ipa::client::host(
 	# NOTE: this should be a copy of most of the params from ipa::client
+	$domain = '',
 	$realm = '',
 	$server = '',
 	$password = '',
@@ -1108,17 +1110,27 @@ define ipa::client::host(
 	$x = regsubst("${name}", $r, '\2')	# the dot
 	$d = regsubst("${name}", $r, '\3')
 
-	$domain = "${d}" ? {
-		'' => "${::domain}",
-		default => "${d}",
+	$valid_hostname = "${h}"
+	$valid_domain = "${d}" ? {
+		'' => "${domain}" ? {
+			'' => "${::domain}",
+			default => "${domain}",
+		},
+		default => "${d}" ? {	# we need to check this matches $domain
+			"${domain}" => "${d}",		# they match, okay phew
+			default => '',	# no match, set '' to trigger an error!
+		},
 	}
-	$hostname = "${h}"
+	# this error condition is very important because '' is used as trigger!
+	if "${valid_domain}" == '' {
+		fail('A $domain inconsistency was found.')
+	}
 
 	class { '::ipa::client':
 		# NOTE: this should transfer most of the params from ipa::client
 		name => $name,		# often the fqdn, but necessarily
-		hostname => $hostname,
-		domain => $domain,
+		hostname => $valid_hostname,
+		domain => $valid_domain,
 		realm => $realm,
 		server => $server,
 		password => $password,
