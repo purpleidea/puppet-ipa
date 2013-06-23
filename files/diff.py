@@ -52,6 +52,10 @@ def unicodeize(x):
 def process_macaddress(x):
 	if x is None: return None	# pass through the none's
 	if x == []: return None		# empties show up as 'None' in freeipa
+	# TODO: we should really rewrite this diff.py so that individual
+	# data types are given a "compare" function that takes two inputs,
+	# instead of blindly sorting, unicodizing and uppercasing things...
+	x = [m.upper() for m in x]	# ipa expects uppercase mac addresses
 	return x
 
 def process_sshpubkeyfp(x):
