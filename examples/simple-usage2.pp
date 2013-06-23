@@ -19,7 +19,7 @@ ipa::server::host { 'nfs':	# NOTE: adding .${domain} is a good idea....
 	watch => true,	# read and understand the docs well
 }
 
-ipa::server::service { "nfs":
+ipa::server::service { 'nfs':	# this $name should match nfs::server => $ipa
 	service => 'nfs',
 	host => 'nfs',		# needs to match ipa::server::host $name
 	domain => "${domain}",	# used to figure out realm

@@ -1034,6 +1034,20 @@ class ipa::client(
 		alias => 'ipa-install',	# same alias as server to prevent both!
 	}
 
+	# this file is a tag that lets nfs know that the ipa host is now ready!
+	file { "${vardir}/ipa_client_installed":
+		content => "true\n",
+		owner => root,
+		group => nobody,
+		mode => 600,	# u=rw,go=
+		backup => false,
+		require => [
+			File["${vardir}/"],
+			Exec['ipa-install'],
+		],
+		ensure => present,
+	}
+
 	# normally when this resource is created by collection, the password is
 	# exported which allows the client to boostrap itself without a ticket.
 	# once this host gets built, the password gets "used" on the ipa server

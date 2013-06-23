@@ -9,11 +9,13 @@ Please ping me if you have big changes in mind, before you write a giant patch.
 Module specific notes:
 * This is a rather elaborate module. Be sure to review the code before using.
 * There are a number of (useful) lengthy comments and explanations in the code.
+* This module plays nicely with my puppet-nfs module. Use them together :)
 
 Dependencies:
 * puppetlabs-stdlib (required)
 * my puppet-shorewall module (optional)
 * my puppet-puppet module (optional)
+* my puppet-nfs module (optional)
 
 
 Happy hacking,
