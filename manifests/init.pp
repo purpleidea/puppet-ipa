@@ -376,7 +376,7 @@ class ipa::server::host::base {
 			# TODO: there's probably a better fqdn match expression
 			# this is an expression to prevent all fqdn deletion...
 			#true => ['^[a-zA-Z0-9\.\-]*$'],
-			true => '^[[:alpha:]]{1}[[:alnum:]-.]*$',
+			true => ['^[[:alpha:]]{1}[[:alnum:]-.]*$'],
 			default => false,
 		},
 		default => false,	# trigger error...
@@ -1213,7 +1213,7 @@ class ipa::server::service::base {
 			# TODO: there's probably a better fqdn match expression
 			# this is an expression to prevent all fqdn deletion...
 			#true => ['^[a-zA-Z0-9\.\-]*$'],
-			true => '^[[:alpha:]]{1}[[:alnum:]-.]*$',
+			true => ['^[[:alpha:]]{1}[[:alnum:]-.]*$'],
 			default => false,
 		},
 		default => false,	# trigger error...
