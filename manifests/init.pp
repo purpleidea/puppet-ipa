@@ -1299,7 +1299,7 @@ define ipa::server::service(
 
 	$a = regsubst("${name}", $r, '\1')	# service (nfs)
 	$b = regsubst("${name}", $r, '\3')	# fqdn (nfs.example.com)
-	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM
+	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM)
 
 	# service: first try to get value from arg, then fall back to $a (name)
 	$valid_service = "${service}" ? {
@@ -1505,7 +1505,7 @@ define ipa::client::service(
 
 	$a = regsubst("${name}", $r, '\1')	# service (nfs)
 	$b = regsubst("${name}", $r, '\3')	# fqdn (nfs.example.com)
-	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM
+	$c = regsubst("${name}", $r, '\5')	# realm (EXAMPLE.COM)
 
 	# service: first try to get value from arg, then fall back to $a (name)
 	$valid_service = "${service}" ? {
