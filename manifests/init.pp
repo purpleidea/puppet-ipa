@@ -124,7 +124,6 @@ class ipa::server(
 	$allow = 'all',
 
 	# special
-	$self = true,			# include self automatically or not ?
 	# NOTE: host_excludes is matched with bash regexp matching in: [[ =~ ]]
 	# if the string regexp passed contains quotes, string matching is done:
 	# $string='"hostname.example.com"' vs: $regexp='hostname.example.com' !
@@ -396,12 +395,6 @@ class ipa::server(
 			", comment => 'Allow dogtag certificate system on tcp port 7389.'}
 		}
 	}
-
-	if $self {
-		# include self, so that it doesn't get purged...
-		ipa::server::host { "${valid_hostname}.${valid_domain}":
-		}
-	}
 }
 
 # FIXME: some values have not been filled in yet. some are missing: --arguments
@@ -531,6 +524,10 @@ class ipa::server::host::base {
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
+	# we don't want to purge the freeipa entry, so we need to exclude it...
+	$valid_hostname = $ipa::server::valid_hostname
+	$valid_domain = $ipa::server::valid_domain
+	$host_always_ignore = ["${valid_hostname}.${valid_domain}"]
 	$host_excludes = $ipa::server::host_excludes
 	$valid_host_excludes = type($host_excludes) ? {
 		'string' => [$host_excludes],
@@ -572,7 +569,7 @@ class ipa::server::host::base {
 	$fs_chr = ' '
 	$suffix = '.host'
 	$regexp = $valid_host_excludes
-	$ignore = []	# TODO: i could add the freeipa host here...
+	$ignore = $host_always_ignore
 
 	# build the clean script
 	file { "${vardir}/clean-hosts.sh":
