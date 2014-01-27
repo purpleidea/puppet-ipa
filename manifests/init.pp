@@ -340,7 +340,7 @@ class ipa::server(
 	# FIXME: consider allowing only certain ip's to the ipa server
 	# TODO: we could open ports per host when added with ipa::server::host
 	if $shorewall {
-		if $allow == 'all' {
+		if $allow == 'all' or "${allow}" == '' {
 			$net = "${zone}"
 		} else {
 			$net = is_array($allow) ? {
