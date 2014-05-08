@@ -27,7 +27,7 @@
 # could fake the dns entry in your /etc/hosts file by adding/ensuring the line:
 #	127.0.0.1 ipa.example.com ipa localhost.localdomain localhost
 # exists (replace example.com with your ipa domain of course) and then running:
-#	sudo ssh root@ipa -L 80:localhost:80 443:localhost:443	# (as root!)
+#	sudo ssh root@ipa -L 80:localhost:80 -L 443:localhost:443 # (as root !)
 # to force forwarding on priviledged ports, and then point your web browser to:
 #	https://ipa.example.com/ipa/ui/
 # and then accept the certificate. but don't do any of this, it's an evil hack!
@@ -312,6 +312,9 @@ class ipa::server(
 			alias => 'ipa-dns-check',
 		}
 	}
+
+	# TODO: add management of ipa services (ipa, httpd, krb5kdc, kadmin, etc...) run: ipactl status or service ipa status for more info
+	# TODO: add management (augeas?) of /etc/ipa/default.conf
 
 	# since we're on the kdc, we can use our root access to get a ticket...
 	# < me> kaduk_: [...] is this an evil hack? [...]

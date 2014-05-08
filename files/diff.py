@@ -571,6 +571,9 @@ for i in process.keys():
 	watch = (b is not None)	# values of None are unmanaged
 	if watch and not(compare(a, b)):	# run the cmp!
 		if args.debug:
+			# TODO: compare could return the post decorated x and y
+			# which we're actually comparing and print them here...
+			# this would give us more information about the unmatch
 			print >> sys.stderr, ('Unmatched on %s between %s and %s' % (i, a, b))
 		if args.n:
 			sys.exit(0)
