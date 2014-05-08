@@ -1,0 +1,15 @@
+[submodule "vagrant/puppet/modules/puppet"]
+	path = vagrant/puppet/modules/puppet
+	url = https://github.com/purpleidea/puppet-puppet
+[submodule "vagrant/puppet/modules/module-data"]
+	path = vagrant/puppet/modules/module-data
+	url = https://github.com/purpleidea/puppet-module-data
+[submodule "vagrant/puppet/modules/stdlib"]
+	path = vagrant/puppet/modules/stdlib
+	url = https://github.com/purpleidea/puppetlabs-stdlib
+[submodule "vagrant/puppet/modules/shorewall"]
+	path = vagrant/puppet/modules/shorewall
+	url = https://github.com/purpleidea/puppet-shorewall
+[submodule "vagrant/puppet/modules/yum"]
+	path = vagrant/puppet/modules/yum
+	url = https://github.com/purpleidea/puppet-yum
