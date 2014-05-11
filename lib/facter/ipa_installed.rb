@@ -40,8 +40,7 @@ else
 end
 
 if not(valid_dir.nil?) and File.directory?(valid_dir)
-	# TODO: add ipa_server_installed if needed
-	['ipa_client_installed'].each do |key|
+	['ipa_client_installed', 'ipa_server_installed'].each do |key|
 		f = valid_dir+''+key	# the full file path
 		if File.exists?(f)
 			# NOTE: sadly, empty string facts don't work :(

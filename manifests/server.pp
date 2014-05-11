@@ -20,14 +20,19 @@ class ipa::server(
 	$domain = $::domain,
 	$realm = '',			# defaults to upcase($domain)
 
-	# TODO: how can we hide these values ?
-	# FIXME: maybe we could generate these passwords locally, and then save
-	# them to a file to be read by the installer and then gpg encrypted and
-	# emailed to a root email and then deleted from the file! this would
-	# require an admin's public pgp key which would be a cool thing to have
-	# TODO: error if these passwords aren't eight chars or more
-	$dm_password = '',		# eight char minimum
-	$admin_password = '',		# eight char minimum
+	# we generate these passwords locally to use for the install, but then
+	# we gpg encrypt and store locally and/or email to the root user. this
+	# requires an admin's public gpg key which is a sensible thing to have
+	# thanks to Jpmh from #gnupg for helping me find things in the manual!
+	$dm_password = '',		# eight char minimum or auto-generated
+	$admin_password = '',		# eight char minimum or auto-generated
+
+	# if one of the above passwords is blank, you must use: $gpg_recipient
+	# with: $gpg_recipient, you must use: $gpg_publickey or $gpg_keyserver
+	$gpg_recipient = '',		# must specify a valid -r value to use
+	$gpg_publickey = '',		# can be the value or a puppet:/// uri
+	$gpg_keyserver = '',		# use a uri like: hkp://keys.gnupg.net
+	$gpg_sendemail = false,		# mail out the gpg encrypted password?
 
 	$idstart = '16777216',		# TODO: what is sensible? i picked 2^24
 	$idmax = '',
@@ -128,12 +133,19 @@ class ipa::server(
 		}
 	}
 
+	$ipa_installed = "/usr/bin/python -c 'import sys,ipaserver.install.installutils; sys.exit(0 if ipaserver.install.installutils.is_ipa_configured() else 1)'"
+
 	package { 'ipa-server':
 		ensure => present,
 	}
 
 	package { 'python-argparse':		# used by diff.py
 		ensure => present,
+	}
+
+	package { 'pwgen':			# used to generate passwords
+		ensure => present,
+		before => Exec['ipa-install'],
 	}
 
 	file { "${vardir}/diff.py":		# used by a few child classes
@@ -150,36 +162,231 @@ class ipa::server(
 		],
 	}
 
-	# store the passwords in text files instead of having them on cmd line!
-	# TODO: storing plain text passwords is not good, so what should we do?
-	file { "${vardir}/dm.password":
-		content => "${dm_password}\n",		# top top secret!
-		owner => root,
-		group => nobody,
-		mode => 600,	# u=rw,go=
-		backup => false,
-		require => File["${vardir}/"],
-		ensure => present,
+	if "${dm_password}" == '' and "${gpg_recipient}" == '' {
+		fail('You must specify either a dm_password or a GPG id.')
 	}
 
-	file { "${vardir}/admin.password":
-		content => "${admin_password}\n",	# top secret!
-		owner => root,
-		group => nobody,
-		mode => 600,	# u=rw,go=
-		backup => false,
-		require => File["${vardir}/"],
-		ensure => present,
+	if "${admin_password}" == '' and "${gpg_recipient}" == '' {
+		fail('You must specify either an admin_password or a GPG id.')
+	}
+
+	if "${gpg_recipient}" != '' {
+		if "${gpg_publickey}" == '' and "${gpg_keyserver}" == '' {
+			fail('You must specify either a keyserver or a public key.')
+		}
+
+		if "${gpg_publickey}" != '' and "${gpg_keyserver}" != '' {
+			fail('You cannot specify a keyserver and a public key.')
+		}
+	}
+
+	if "${gpg_recipient}" != '' {
+		file { "${vardir}/gpg/":
+			ensure => directory,	# make sure this is a directory
+			recurse => true,	# don't recurse into directory
+			purge => true,		# don't purge unmanaged files
+			force => true,		# don't purge subdirs and links
+			# group and other must not have perms or gpg complains!
+			mode => 600,		# u=rw,go=
+			backup => false,
+			require => File["${vardir}/"],
+		}
+
+		# tag
+		$dm_password_filename = "${vardir}/gpg/dm_password.gpg"
+		file { "${dm_password_filename}":
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+
+		# tag
+		$admin_password_filename = "${vardir}/gpg/admin_password.gpg"
+		file { "${admin_password_filename}":
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+
+		# tag
+		file { "${vardir}/gpg/pubring.gpg":
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+
+		file { "${vardir}/gpg/secring.gpg":
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+
+		# tag this file too, because the gpg 'unless' commands cause it
+		# get added when gpg sees that it's missing from the --homedir!
+		file { "${vardir}/gpg/trustdb.gpg":
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+	}
+
+	if "${gpg_publickey}" != '' {
+		$gpg_source = inline_template('<%= @gpg_publickey.start_with?("puppet:///") ? "true":"false" %>')
+		file { "${vardir}/gpg/pub.gpg":
+			content => "${gpg_source}" ? {
+				'true' => undef,
+				default => "${gpg_publickey}",
+			},
+			source => "${gpg_source}" ? {
+				'true' => "${gpg_publickey}",
+				default => undef,
+			},
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			before => Exec['ipa-gpg-import'],
+			require => File["${vardir}/gpg/"],
+			ensure => present,
+		}
+	}
+
+	$gpg_cmd = "/usr/bin/gpg --homedir '${vardir}/gpg/'"	# base gpg cmd!
+
+	$gpg_import = "${gpg_publickey}" ? {
+		'' => "--keyserver '${gpg_keyserver}' --recv-keys '${gpg_recipient}'",
+		default => "--import '${vardir}/gpg/pub.gpg'",
+	}
+
+	if "${gpg_recipient}" != '' {
+
+		# check if key is already imported
+		$gpg_unless = "${gpg_cmd} --with-colons --fast-list-mode --list-public-keys '${gpg_recipient}'"
+
+		exec { "${gpg_cmd} ${gpg_import}":
+			logoutput => on_failure,
+			unless => $gpg_unless,
+			before => Exec['ipa-install'],
+			require => File["${vardir}/gpg/"],
+			alias => 'ipa-gpg-import',
+		}
+
+		# TODO: add checks
+		# * is key revoked ?
+		# * other sanity checks ?
+
+		if $gpg_sendemail {
+			# if we email out the encrypted password, make sure its
+			# public key has the correct email address to match it!
+			$gpg_check_email = "${gpg_cmd} --with-colons --list-public-keys '${gpg_recipient}' | /bin/awk -F ':' '\$1 = /uid/ {print \$10}' | /bin/grep -qF '<${valid_email}>'"
+			exec { "${gpg_check_email}":
+				logoutput => on_failure,
+				unless => $gpg_unless,
+				before => Exec['ipa-install'],
+				require => Exec['ipa-gpg-import'],
+				alias => 'ipa-gpg-check',
+			}
+		}
+	}
+
+	$pwgen_cmd = "/usr/bin/pwgen 16 1"
+
+	$valid_dm_password = "${dm_password}" ? {
+		'' => "${pwgen_cmd}",
+		default => "/bin/cat '${vardir}/dm.password'",
+	}
+
+	$valid_admin_password = "${admin_password}" ? {
+		'' => "${pwgen_cmd}",
+		default => "/bin/cat '${vardir}/admin.password'",
+	}
+
+	# NOTE: we have to use '--trust-model always' or it prompts with:
+	# It is NOT certain that the key belongs to the person named
+	# in the user ID.  If you *really* know what you are doing,
+	# you may answer the next question with yes.
+	$gpg_encrypt = "${gpg_cmd} --encrypt --trust-model always --recipient '${gpg_recipient}'"
+	$mail_send = "/bin/mailx -s 'Password for: ${valid_hostname}.${valid_domain}' '${valid_email}'"
+
+	$dm_password_file = "${gpg_recipient}" ? {
+		'' => '/bin/cat',	# pass through, no gpg key exists...
+		default => "/usr/bin/tee >( ${gpg_encrypt} > '${dm_password_filename}' )",
+	}
+	if "${gpg_recipient}" != '' and $gpg_sendemail {
+		$dm_password_mail = "/usr/bin/tee >( ${gpg_encrypt} | (/bin/echo 'GPG(DM password):'; /bin/cat) | ${mail_send} > /dev/null )"
+	} else {
+		$dm_password_mail = '/bin/cat'
+	}
+	$dm_password_exec = "${valid_dm_password} | ${dm_password_file} | ${dm_password_mail} | /bin/cat"
+
+	$admin_password_file = "${gpg_recipient}" ? {
+		'' => '/bin/cat',
+		default => "/usr/bin/tee >( ${gpg_encrypt} > '${admin_password_filename}' )",
+	}
+	if "${gpg_recipient}" != '' and $gpg_sendemail {
+		$admin_password_mail = "/usr/bin/tee >( ${gpg_encrypt} | (/bin/echo 'GPG(admin password):'; /bin/cat) | ${mail_send} > /dev/null )"
+	} else {
+		$admin_password_mail = '/bin/cat'
+	}
+	$admin_password_exec = "${valid_admin_password} | ${admin_password_file} | ${admin_password_mail} | /bin/cat"
+
+	# store the passwords in text files instead of having them on cmd line!
+	# even better is to let them get automatically generated and encrypted!
+	if "${dm_password}" != '' {
+		$dm_bool = inline_template('<%= @dm_password.length < 8 ? "false":"true" %>')
+		if "${dm_bool}" != 'true' {
+			fail('The dm_password must be at least eight characters in length.')
+		}
+		file { "${vardir}/dm.password":
+			content => "${dm_password}\n",		# top top secret!
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			before => Exec['ipa-install'],
+			require => File["${vardir}/"],
+			ensure => present,
+		}
+	}
+
+	if "${admin_password}" != '' {
+		$admin_bool = inline_template('<%= @admin_password.length < 8 ? "false":"true" %>')
+		if "${admin_bool}" != 'true' {
+			fail('The admin_password must be at least eight characters in length.')
+		}
+		file { "${vardir}/admin.password":
+			content => "${admin_password}\n",	# top secret!
+			owner => root,
+			group => nobody,
+			mode => 600,	# u=rw,go=
+			backup => false,
+			before => Exec['ipa-install'],
+			require => File["${vardir}/"],
+			ensure => present,
+		}
 	}
 
 	# these are the arguments to ipa-server-install in the prompted order
 	$args01 = "--hostname='${valid_hostname}.${valid_domain}'"
 	$args02 = "--domain='${valid_domain}'"
 	$args03 = "--realm='${valid_realm}'"
-	#$args04 = "--ds-password='${dm_password}'"	# Directory Manager
-	$args04 = "--ds-password=`/bin/cat '${vardir}/dm.password'`"
-	#$args05 = "--admin-password='${admin_password}'"	# IPA admin
-	$args05 = "--admin-password=`/bin/cat '${vardir}/admin.password'`"
+	$args04 = "--ds-password=`${dm_password_exec}`"	# Directory Manager
+	$args05 = "--admin-password=`${admin_password_exec}`"	# IPA admin
 	# TODO: reconcile these options with the range settings: EXAMPLE.COM_id_range
 	# if that range is changed, should we watch for it and reset? yes we should if we specified one here...
 	$args06 = $idstart ? {
@@ -210,16 +417,40 @@ class ipa::server(
 	#$args = inline_template('<%= arglist.delete_if {|x| x.empty? }.join(" ") %>')
 	$args = join(delete($arglist, ''), ' ')
 
-	$unless = "/usr/bin/python -c 'import sys,ipaserver.install.installutils; sys.exit(0 if ipaserver.install.installutils.is_ipa_configured() else 1)'"
-	exec { "/usr/sbin/ipa-server-install ${args} --unattended":
+	# split ipa-server-install command into a separate file so that it runs
+	# as bash, and also so that it's available to run manually and inspect!
+	file { "${vardir}/ipa-server-install.sh":
+		content => inline_template("#!/bin/bash\n/usr/sbin/ipa-server-install ${args} --unattended\n"),
+		owner => root,
+		group => root,
+		mode => 700,
+		ensure => present,
+		require => File["${vardir}/"],
+	}
+
+	exec { "${vardir}/ipa-server-install.sh":
 		logoutput => on_failure,
-		unless => "${unless}",	# can't install if already installed...
+		unless => "${ipa_installed}",	# can't install if installed...
+		timeout => 3600,	# hope it doesn't take more than 1 hour
 		require => [
 			Package['ipa-server'],
-			File["${vardir}/dm.password"],
-			File["${vardir}/admin.password"],
+			File["${vardir}/ipa-server-install.sh"],
 		],
 		alias => 'ipa-install',	# same alias as client to prevent both!
+	}
+
+	# this file is a tag that lets notify know it only needs to run once...
+	file { "${vardir}/ipa_server_installed":
+		content => "true\n",
+		owner => root,
+		group => nobody,
+		mode => 600,	# u=rw,go=
+		backup => false,
+		require => [
+			File["${vardir}/"],
+			Exec['ipa-install'],
+		],
+		ensure => present,
 	}
 
 	# check if we changed the dns state after initial install (unsupported)
@@ -319,6 +550,52 @@ class ipa::server(
 			shorewall::rule { 'dogtag': rule => "
 			ACCEPT  ${net}    $FW    tcp  7389
 			", comment => 'Allow dogtag certificate system on tcp port 7389.'}
+		}
+	}
+
+	# this fact gets created once the installation is complete... the first
+	# time that puppet runs, it won't be set. after installation it will :)
+	# this mechanism provides a way to only run the 'helpful' notifies once
+	if "${ipa_server_installed}" != 'true' {
+		# notify about password locations to be helpful
+		if "${gpg_recipient}" != '' {
+			if "${dm_password}" == '' {
+				$dm_password_msg = "The dm_password should be found in: ${dm_password_filename}."
+				notice("${dm_password_msg}")
+				notify {'ipa-notify-dm_password':
+					message => "${dm_password_msg}",
+					#stage => last,	# TODO
+					require => Exec['ipa-install'],
+				}
+				if $gpg_sendemail {
+					$dm_password_email_msg = "The dm_password should be emailed to: ${valid_email}."
+					notice("${dm_password_email_msg}")
+					notify {'ipa-notify-email-dm_password':
+						message => "${dm_password_email_msg}",
+						#stage => last,	# TODO
+						require => Exec['ipa-install'],
+					}
+				}
+			}
+
+			if "${admin_password}" == '' {
+				$admin_password_msg = "The admin_password should be found in: ${admin_password_filename}."
+				notice("${admin_password_msg}")
+				notify {'ipa-notify-admin_password':
+					message => "${admin_password_msg}",
+					#stage => last,	# TODO
+					require => Exec['ipa-install'],
+				}
+				if $gpg_sendemail {
+					$admin_password_email_msg = "The admin_password should be emailed to: ${valid_email}."
+					notice("${admin_password_email_msg}")
+					notify {'ipa-notify-email-admin_password':
+						message => "${admin_password_email_msg}",
+						#stage => last,	# TODO
+						require => Exec['ipa-install'],
+					}
+				}
+			}
 		}
 	}
 }
