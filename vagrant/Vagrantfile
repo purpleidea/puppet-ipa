@@ -365,6 +365,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			:libvirt__dhcp_enabled => false,
 			:libvirt__network_name => 'ipa'
 
+			# use a specialized freeipa box if it exists :)
+			if `vagrant box list | grep -q '^centos-6-freeipa' && echo -n found` != ''
+				vm.vm.box = 'centos-6-freeipa'
+			end
 			# vagrant won't bind to these ports if not run as root!
 			# if vagrant-libvirt includes this patch, it is better:
 			# https://github.com/purpleidea/vagrant-libvirt/tree/feat/sudo-forward
