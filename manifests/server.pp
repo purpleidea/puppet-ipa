@@ -413,7 +413,30 @@ class ipa::server(
 		default => '',
 	}
 
-	$arglist = ["${args01}", "${args02}", "${args03}", "${args04}", "${args05}", "${args06}", "${args07}", "${args08}", "${args09}", "${args10}"]
+	$versioncmp = versioncmp("${::ipa_version}", '3.2.0')
+	$args11 = $dogtag ? {
+		true => '',	# TODO: setup dogtag
+		default => "${versioncmp}" ? {
+			# pre 3.2.0, you have to disable dogtag manually
+			'-1' => '--selfsign',		# disable dogtag
+			# post 3.2.0, dogtag is not setup by default...!
+			default => '',
+		},
+	}
+
+	$arglist = [
+		"${args01}",
+		"${args02}",
+		"${args03}",
+		"${args04}",
+		"${args05}",
+		"${args06}",
+		"${args07}",
+		"${args08}",
+		"${args09}",
+		"${args10}",
+		"${args11}",
+	]
 	#$args = inline_template('<%= arglist.delete_if {|x| x.empty? }.join(" ") %>')
 	$args = join(delete($arglist, ''), ' ')
 
