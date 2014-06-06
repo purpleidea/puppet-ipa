@@ -413,6 +413,8 @@ class ipa::server(
 		default => '',
 	}
 
+	# we check the version because the --selfsign option vanishes in 3.2.0
+	# http://www.freeipa.org/page/Releases/3.2.0#Dropped_--selfsign_option
 	$versioncmp = versioncmp("${::ipa_version}", '3.2.0')
 	$args11 = $dogtag ? {
 		true => '',	# TODO: setup dogtag
