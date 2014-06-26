@@ -38,7 +38,7 @@ node puppet inherits default {
 	}
 }
 
-node ipa inherits default {
+node /^ipa\d+$/ inherits default {	# ipa{1,2,..N}
 
 	if "${::vagrant_ipa_firewall}" != 'false' {
 		include firewall
@@ -57,6 +57,10 @@ node ipa inherits default {
 	$domain = $::domain
 	class { '::ipa::server':
 		domain => "${domain}",
+		topology => "${::vagrant_ipa_topology}" ? {
+			'' => undef,
+			default => "${::vagrant_ipa_topology}",
+		},
 		dm_password => "${::vagrant_ipa_recipient}" ? {
 			'' => 'password',	# unsafe !!!
 			default => undef,

@@ -156,7 +156,7 @@ define ipa::client::service(
 			Exec['ipa-install'],
 			Ipa::Client::Host["${valid_host}"],
 		],
-		alias => "ipa-server-kinit-${name}",
+		alias => "ipa-client-service-kinit-${name}",
 	}
 
 	$args01 = "--server='${valid_server}'"	# contact this KDC server (ipa)
@@ -177,7 +177,7 @@ define ipa::client::service(
 			#Package['ipa-client'],
 			#Exec['ipa-install'],
 			#Ipa::Client::Host["${valid_host}"],
-			Exec["ipa-server-kinit-${name}"],
+			Exec["ipa-client-service-kinit-${name}"],
 		],
 		#alias => "ipa-getkeytab-${name}",
 	}

@@ -19,6 +19,8 @@
 define ipa::server::config(
 	$value
 ) {
+	include ipa::common
+
 	$key = "${name}"
 
 	$etype = "${key}" ? {	# expected type
@@ -127,8 +129,9 @@ define ipa::server::config(
 
 	$cutlength = inline_template('<%= (rawkey.length+2).to_s %>')
 	exec { "/usr/bin/ipa config-mod ${option}'${safe_value}'":
-		unless => "/usr/bin/test \"`/usr/bin/ipa config-show --raw --all | /usr/bin/tr -d ' ' | /bin/grep '^${rawkey}:' | /bin/cut -b ${cutlength}- | /usr/bin/paste -sd '${jchar}'`\" = '${safe_value}'",
 		logoutput => on_failure,
+		onlyif => "${::ipa::common::ipa_installed}",
+		unless => "/usr/bin/test \"`/usr/bin/ipa config-show --raw --all | /usr/bin/tr -d ' ' | /bin/grep '^${rawkey}:' | /bin/cut -b ${cutlength}- | /usr/bin/paste -sd '${jchar}'`\" = '${safe_value}'",
 		require => [
 			Exec['ipa-install'],
 			Exec['ipa-server-kinit'],

@@ -19,6 +19,10 @@ class ipa::server(
 	$hostname = $::hostname,
 	$domain = $::domain,
 	$realm = '',			# defaults to upcase($domain)
+	$vip = '',			# virtual ip of the replica master host
+	$peers = {},			# specify the peering topology by fqdns
+	$topology = '',			# specify the peering algorithm to use!
+	$topology_arguments = [],	# list of additional arguments for algo
 
 	# we generate these passwords locally to use for the install, but then
 	# we gpg encrypt and store locally and/or email to the root user. this
@@ -66,9 +70,39 @@ class ipa::server(
 ) {
 	$FW = '$FW'			# make using $FW in shorewall easier...
 
+	# TODO: should we always include the replica peering or only when used?
+	include ipa::server::replica::peering
+	include ipa::common
 	include ipa::vardir
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+
+	if "${vip}" != '' {
+		if ! ($vip =~ /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/) {
+			fail('You must specify a valid VIP to use.')
+		}
+	}
+	$valid_vip = "${vip}"
+	$vipif = inline_template("<%= @interfaces.split(',').find_all {|x| '${valid_vip}' == scope.lookupvar('ipaddress_'+x) }[0,1].join('') %>")
+
+	# this is used for automatic peering... this is a list of every server!
+	$replica_peers_fact = "${::ipa_server_replica_peers}"	# fact!
+	$replica_peers = split($replica_peers_fact, ',')	# list!
+
+
+	# run the appropriate topology function here
+	$empty_hash = {}
+	$valid_peers = $topology ? {
+		'flat' => ipa_topology_flat($replica_peers),
+		'ring' => ipa_topology_ring($replica_peers),
+		#'manual' => $peers,
+		default => type($peers) ? {	# 'manual' (default) peering...
+			'hash' => $peers,	# TODO: validate this data type
+			default => $empty_hash,	# invalid data...
+		},
+	}
+
+	notice(inline_template('valid_peers: <%= @valid_peers.inspect %>'))
 
 	$valid_hostname = "${hostname}"		# TODO: validate ?
 	$valid_domain = downcase($domain)	# TODO: validate ?
@@ -126,6 +160,8 @@ class ipa::server(
 		fail('A $domain value is required.')
 	}
 
+	$valid_fqdn = "${valid_hostname}.${valid_domain}"
+
 	if $dns {
 		package { ['bind', 'bind-dyndb-ldap']:
 			ensure => present,
@@ -133,19 +169,18 @@ class ipa::server(
 		}
 	}
 
-	$ipa_installed = "/usr/bin/python -c 'import sys,ipaserver.install.installutils; sys.exit(0 if ipaserver.install.installutils.is_ipa_configured() else 1)'"
-
-	package { 'ipa-server':
-		ensure => present,
-	}
-
 	package { 'python-argparse':		# used by diff.py
 		ensure => present,
+		before => Package['ipa-server'],
 	}
 
 	package { 'pwgen':			# used to generate passwords
 		ensure => present,
-		before => Exec['ipa-install'],
+		before => Package['ipa-server'],
+	}
+
+	package { 'ipa-server':
+		ensure => present,
 	}
 
 	file { "${vardir}/diff.py":		# used by a few child classes
@@ -382,7 +417,7 @@ class ipa::server(
 	}
 
 	# these are the arguments to ipa-server-install in the prompted order
-	$args01 = "--hostname='${valid_hostname}.${valid_domain}'"
+	$args01 = "--hostname='${valid_fqdn}'"
 	$args02 = "--domain='${valid_domain}'"
 	$args03 = "--realm='${valid_realm}'"
 	$args04 = "--ds-password=`${dm_password_exec}`"	# Directory Manager
@@ -453,20 +488,47 @@ class ipa::server(
 		require => File["${vardir}/"],
 	}
 
-	exec { "${vardir}/ipa-server-install.sh":
-		logoutput => on_failure,
-		unless => "${ipa_installed}",	# can't install if installed...
-		timeout => 3600,	# hope it doesn't take more than 1 hour
-		require => [
-			Package['ipa-server'],
-			File["${vardir}/ipa-server-install.sh"],
-		],
-		alias => 'ipa-install',	# same alias as client to prevent both!
+	if ("${valid_vip}" == '' or "${vipif}" != '') {
+
+		exec { "${vardir}/ipa-server-install.sh":
+			logoutput => on_failure,
+			unless => "${::ipa::common::ipa_installed}",	# can't install if installed...
+			timeout => 3600,	# hope it doesn't take more than 1 hour
+			require => [
+				Package['ipa-server'],
+				File["${vardir}/ipa-server-install.sh"],
+			],
+			alias => 'ipa-install',	# same alias as client to prevent both!
+		}
+	} else {
+
+		class { '::ipa::server::replica::install':
+			peers => $valid_peers,
+		}
+
+	}
+
+	if ("${valid_vip}" == '' or "${vipif}" != '') {
+
+		# NOTE: this is useful to collect only on hosts that are installed or
+		# which are replicas that have been installed. ensure the type checks
+		# this prepares for any host we prepare for to potentially join us...
+		Ipa::Server::Replica::Prepare <<| title != "${::fqdn}" |>> {
+
+		}
+
+	} else {
+
+		# NOTE: this is useful to export from any host that didn't install !!!
+		# this sends the message: "prepare for me to potentially join please!"
+		@@ipa::server::replica::prepare { "${valid_fqdn}":
+		}
+
 	}
 
 	# this file is a tag that lets notify know it only needs to run once...
 	file { "${vardir}/ipa_server_installed":
-		content => "true\n",
+		#content => "true\n",
 		owner => root,
 		group => nobody,
 		mode => 600,	# u=rw,go=
@@ -476,6 +538,15 @@ class ipa::server(
 			Exec['ipa-install'],
 		],
 		ensure => present,
+		alias => 'ipa-server-installed-flag',
+	}
+
+	# this sets the true value so that we know that ipa is installed first!
+	exec { "/bin/echo true > ${vardir}/ipa_server_installed":
+		logoutput => on_failure,
+		unless => "/usr/bin/test \"`/bin/cat ${vardir}/ipa_server_installed`\" = 'true'",
+		onlyif => "${::ipa::common::ipa_installed}",
+		require => File['ipa-server-installed-flag'],
 	}
 
 	# check if we changed the dns state after initial install (unsupported)
@@ -495,28 +566,8 @@ class ipa::server(
 	# TODO: add management of ipa services (ipa, httpd, krb5kdc, kadmin, etc...) run: ipactl status or service ipa status for more info
 	# TODO: add management (augeas?) of /etc/ipa/default.conf
 
-	# since we're on the kdc, we can use our root access to get a ticket...
-	# < me> kaduk_: [...] is this an evil hack? [...]
-	# < kaduk_> [...] It's not really a hack, but things running on the KDC
-	#           are always a bit special.
-	#exec { "/bin/cat '${vardir}/admin.password' | /usr/bin/kinit admin":
-	# NOTE: i added a lifetime of 1 hour... no sense needing any longer
-	$rr = "krbtgt/${valid_realm}@${valid_realm}"
-	$tl = '900'	# 60*15 => 15 minutes
-	exec { "/usr/bin/kinit -k -t KDB: admin -l 1h":	# thanks to: kaduk_
-		logoutput => on_failure,
-		#unless => "/usr/bin/klist -s",	# is there a credential cache
-		# NOTE: we need to check if the ticket has at least a certain
-		# amount of time left. if not, it could expire mid execution!
-		# this should definitely get patched, but in the meantime, we
-		# check that the current time is greater than the valid start
-		# time (in seconds) and that we have within $tl seconds left!
-		unless => "/usr/bin/klist -s && /usr/bin/test \$(( `/bin/date +%s` - `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$1\" \"\$2}' | /bin/date --file=- +%s` )) -gt 0 && /usr/bin/test \$(( `/usr/bin/klist | /bin/grep -F '${rr}' | /bin/awk '{print \$3\" \"\$4}' | /bin/date --file=- +%s` - `/bin/date +%s` )) -gt ${tl}",
-		require => [
-			Exec['ipa-install'],
-			#File["${vardir}/admin.password"],
-		],
-		alias => 'ipa-server-kinit',
+	class { 'ipa::server::kinit':
+		realm => "${valid_realm}",
 	}
 
 	# FIXME: consider allowing only certain ip's to the ipa server
