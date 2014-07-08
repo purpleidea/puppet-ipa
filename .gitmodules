@@ -13,3 +13,6 @@
 [submodule "vagrant/puppet/modules/yum"]
 	path = vagrant/puppet/modules/yum
 	url = https://github.com/purpleidea/puppet-yum
+[submodule "vagrant/puppet/modules/ssh"]
+	path = vagrant/puppet/modules/ssh
+	url = https://github.com/purpleidea/puppet-ssh
