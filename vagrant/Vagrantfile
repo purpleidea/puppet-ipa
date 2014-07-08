@@ -54,6 +54,7 @@ offset = 100		# start hosts after here
 #puts range[0].to_s	# network
 #puts range[1].to_s	# router (reserved)
 #puts range[2].to_s	# puppetmaster
+#puts range[3].to_s	# vip
 
 network2 = IPAddr.new '192.168.145.0/24'
 range2 = network2.to_range.to_a
@@ -263,6 +264,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	end
 
 	#
+	#	vip
+	#
+	vip_ip = range[3].to_s
+	vip_hostname = 'ipa'
+
+	#
 	#	puppetmaster
 	#
 	puppet_ip = range[2].to_s
@@ -310,6 +317,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
 			vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname} ensure=absent"	# so that fqdn works
 
+			vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
 			vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
 			(1..count).each do |i|
 				h = "ipa#{i}"
@@ -406,6 +414,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 				vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
 				vm.vm.provision 'shell', inline: "puppet resource host #{h} ensure=absent"	# so that fqdn works
 
+				vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
 				vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
 				#vm.vm.provision 'shell', inline: "[ ! -e /root/puppet-cert-is-clean ] && ssh -o 'StrictHostKeyChecking=no' #{puppet_hostname} puppet cert clean #{h}.#{domain} ; touch /root/puppet-cert-is-clean"
 				# hosts entries for all hosts
@@ -433,6 +442,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 				puppet.options = '--test'	# see the output
 				puppet.facter = {
 					'vagrant' => '1',
+					'vagrant_ipa_vip' => vip_ip,
+					'vagrant_ipa_vip_fqdn' => "#{vip_hostname}.#{domain}",
 					'vagrant_ipa_firewall' => firewall ? 'true' : 'false',
 					'vagrant_ipa_topology' => topology.to_s,
 					'vagrant_ipa_recipient' => recipient.to_s,
@@ -505,6 +516,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 				vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
 				vm.vm.provision 'shell', inline: "puppet resource host #{h} ensure=absent"	# so that fqdn works
 
+				vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
 				vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
 				# hosts entries for all hosts
 				(1..count).each do |j|
@@ -531,6 +543,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 				puppet.options = '--test'	# see the output
 				puppet.facter = {
 					'vagrant' => '1',
+					'vagrant_ipa_vip' => vip_ip,
+					'vagrant_ipa_vip_fqdn' => "#{vip_hostname}.#{domain}",
 					'vagrant_ipa_firewall' => firewall ? 'true' : 'false',
 					'vagrant_ipa_version' => version,
 				}

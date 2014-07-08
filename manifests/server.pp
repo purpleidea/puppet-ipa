@@ -51,6 +51,7 @@ class ipa::server(
 
 	$email = '',			# defaults to root@domain, important...
 
+	$vrrp = false,
 	$shorewall = false,
 	$zone = 'net',
 	$allow = 'all',
@@ -84,6 +85,18 @@ class ipa::server(
 	}
 	$valid_vip = "${vip}"
 	$vipif = inline_template("<%= @interfaces.split(',').find_all {|x| '${valid_vip}' == scope.lookupvar('ipaddress_'+x) }[0,1].join('') %>")
+
+	# automatically setup vrrp on each host...
+	if $vrrp {
+		class { '::keepalived::simple':
+			#ip => '',
+			vip => "${valid_vip}",
+			shorewall => $shorewall,
+			zone => $zone,
+			#allow => $allow,
+			#password => '',
+		}
+	}
 
 	# this is used for automatic peering... this is a list of every server!
 	$replica_peers_fact = "${::ipa_server_replica_peers}"	# fact!

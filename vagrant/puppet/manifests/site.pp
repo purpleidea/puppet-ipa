@@ -57,6 +57,7 @@ node /^ipa\d+$/ inherits default {	# ipa{1,2,..N}
 	$domain = $::domain
 	class { '::ipa::server':
 		domain => "${domain}",
+		vip => "${::vagrant_ipa_vip}",
 		topology => "${::vagrant_ipa_topology}" ? {
 			'' => undef,
 			default => "${::vagrant_ipa_topology}",
@@ -78,6 +79,7 @@ node /^ipa\d+$/ inherits default {	# ipa{1,2,..N}
 		#gpg_publickey => '',
 		gpg_keyserver => 'hkp://keys.gnupg.net',	# TODO: variable
 		gpg_sendemail => false,
+		vrrp => true,
 		shorewall => "${::vagrant_ipa_firewall}" ? {
 			'false' => false,
 			default => true,

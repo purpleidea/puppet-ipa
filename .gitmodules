@@ -16,3 +16,6 @@
 [submodule "vagrant/puppet/modules/ssh"]
 	path = vagrant/puppet/modules/ssh
 	url = https://github.com/purpleidea/puppet-ssh
+[submodule "vagrant/puppet/modules/keepalived"]
+	path = vagrant/puppet/modules/keepalived
+	url = https://github.com/purpleidea/puppet-keepalived
