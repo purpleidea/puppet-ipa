@@ -75,7 +75,8 @@ class ipa::server::replica::install(
 	}
 
 	# this exec is purposefully very similar to the ipa-server-install exec
-	exec { "/usr/sbin/ipa-replica-install --password=`/bin/cat '${vardir}/dm.password'` --unattended ${valid_file}":
+	# NOTE: the --admin-password is only useful for the connection check...
+	exec { "/usr/sbin/ipa-replica-install --password=`/bin/cat '${vardir}/dm.password'` --admin-password=`/bin/cat '${vardir}/admin.password'` --unattended ${valid_file}":
 		logoutput => on_failure,
 		onlyif => [
 			"/usr/bin/test '${valid_fqdn}' != ''",	# bonus safety!
