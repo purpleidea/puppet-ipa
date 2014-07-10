@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ipa::server::replica::peering (
+	# NOTE: these are *time* based uuid's, eg as generated with: uuidgen -t
+	$uuid = '',	# if empty, puppet will attempt to use the uuidgen fact
 ) {
 
 	include ipa::server::replica::peering::base
@@ -23,11 +25,38 @@ class ipa::server::replica::peering (
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
+	if ("${uuid}" != '') and (! ("${uuid}" =~ /^[a-f0-9]{8}\-[a-f0-9]{4}\-[a-f0-9]{4}\-[a-f0-9]{4}\-[a-f0-9]{12}$/)) {
+		fail("The chosen UUID: '${uuid}' is not valid.")
+	}
+
+	# if we manually *pick* a uuid, then store it too, so that it
+	# sticks if we ever go back to using automatic uuids. this is
+	# useful if a user wants to initially import uuids by picking
+	# them manually, and then letting puppet take over afterwards
+	file { "${vardir}/replica/peering/uuid":
+		# this file object needs to always exist to avoid us purging...
+		content => "${uuid}" ? {
+			'' => undef,
+			default => "${uuid}\n",
+		},
+		owner => root,
+		group => nobody,
+		mode => 600,	# might as well...
+		ensure => present,
+		require => File["${vardir}/replica/peering/"],
+	}
+
+	$valid_uuid = "${uuid}" ? {
+		# fact from data generated in: ${vardir}/replica/peering/uuid
+		'' => "${::ipa_server_replica_uuid}",
+		default => "${uuid}",
+	}
+
 	@@file { "${vardir}/replica/peering/peer_${::fqdn}":
-		content => "${::fqdn}\n",
+		content => "${valid_uuid}\n",
 		tag => 'ipa-server-replica-peering',
 		owner => root,
-		group => root,
+		group => nobody,
 		mode => 600,
 		ensure => present,
 	}
