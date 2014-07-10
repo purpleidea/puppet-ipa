@@ -52,6 +52,7 @@ define ipa::server::replica::prepare(
 		require => Exec["ipa-replica-prepare-${name}"],
 	}
 
+	# add this manually so we don't have to wait for the exported resources
 	ssh::recv { "${valid_fqdn}":
 
 	}

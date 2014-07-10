@@ -64,6 +64,8 @@ class ipa::server::replica::install(
 	# NOTE: this could pull down multiple files...
 	Ssh::File::Pull <<| tag == 'ipa-replica-prepare' |>> {
 		path => "${vardir}/replica/install/",
+		verify => false,		# rely on mtime
+		pair => false,			# do it now so it happens fast!
 		# tag this file so it doesn't get purged
 		ensure => present,
 		owner => root,
