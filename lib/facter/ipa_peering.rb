@@ -132,7 +132,7 @@ end
 # FIXME: ensure that this properly sorts by uuidgen -t times...
 # sort chronologically by time based uuid
 # thanks to: Pádraig Brady for the sort implementation...
-sorted = found.inject({}){ |h,(k,v)| h[k]=v.split('-'); h }.sort_by { |k,v| [v[2], v[1], v[0]] }.map { |x| x[0] }
+sorted = found.inject({}){ |h,(k,v)| h[k]=v.split('-'); h }.sort_by { |k,v| [v[2], v[1], v[0], v[3], v[4]] }.map { |x| x[0] }
 
 sorted.each do |x|
 	Facter.add('ipa_server_replica_uuid_'+x) do
