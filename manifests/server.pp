@@ -67,6 +67,7 @@ class ipa::server(
 	$host_excludes = [],		# never purge these host excludes...
 	$service_excludes = [],		# never purge these service excludes...
 	$user_excludes = [],		# never purge these user excludes...
+	$peer_excludes = [],		# never purge these peer excludes...
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
 	$FW = '$FW'			# make using $FW in shorewall easier...
@@ -102,6 +103,13 @@ class ipa::server(
 	$replica_peers_fact = "${::ipa_server_replica_peers}"	# fact!
 	$replica_peers = split($replica_peers_fact, ',')	# list!
 
+	# NOTE: this algorithm transforms a sorted list of peers into a set of:
+	# from -> to pairs (as a hash), or from -> to and to -> from pairs that
+	# are symmetrical since peering is bi-directional... this list of hosts
+	# could either be determined automatically with "exported resources" or
+	# specified manually. just select an algorithm for automatic peering...
+	# the $key in the hash is the from value. the $value of the hash is the
+	# list of whichever hosts we should peer with, ordered by preference...
 
 	# run the appropriate topology function here
 	$empty_hash = {}
@@ -635,6 +643,11 @@ class ipa::server(
 			ACCEPT  ${net}    $FW    tcp  7389
 			", comment => 'Allow dogtag certificate system on tcp port 7389.'}
 		}
+	}
+
+	# ensure the topology has the right shape...
+	ipa::server::replica::manage { $valid_peers["${::fqdn}"]:	# magic
+		peer => "${::fqdn}",
 	}
 
 	# this fact gets created once the installation is complete... the first
