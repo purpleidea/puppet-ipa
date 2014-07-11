@@ -513,15 +513,6 @@ class ipa::server(
 			],
 			alias => 'ipa-install',	# same alias as client to prevent both!
 		}
-	} else {
-
-		class { '::ipa::server::replica::install':
-			peers => $valid_peers,
-		}
-
-	}
-
-	if ("${valid_vip}" == '' or "${vipif}" != '') {
 
 		# NOTE: this is useful to collect only on hosts that are installed or
 		# which are replicas that have been installed. ensure the type checks
@@ -535,6 +526,10 @@ class ipa::server(
 		# NOTE: this is useful to export from any host that didn't install !!!
 		# this sends the message: "prepare for me to potentially join please!"
 		@@ipa::server::replica::prepare { "${valid_fqdn}":
+		}
+
+		class { '::ipa::server::replica::install':
+			peers => $valid_peers,
 		}
 
 	}
