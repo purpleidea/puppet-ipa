@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-class ipa::server::replica::peering (
+class ipa::server::replica::peering(
 	# NOTE: these are *time* based uuid's, eg as generated with: uuidgen -t
 	$uuid = '',	# if empty, puppet will attempt to use the uuidgen fact
 ) {
