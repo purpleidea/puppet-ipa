@@ -57,7 +57,9 @@ class ipa::server::replica::install(
 	}
 
 	$filename = "replica-info-${valid_fqdn}.gpg"
+	$filefrom = "replica-info-${::fqdn}.gpg"	# name it with our fqdn
 	$valid_file = "${vardir}/replica/install/${filename}"
+	$valid_from = "${vardir}/replica/prepare/${filefrom}"
 
 	# send to all prepared hosts, so the keys don't flip flop if vip moves!
 	ssh::send { $replica_fqdns:	# fqdn of where i got this from...
@@ -66,7 +68,11 @@ class ipa::server::replica::install(
 
 	# TODO: tag can be used as grouping
 	# NOTE: this could pull down multiple files...
-	Ssh::File::Pull <<| tag == 'ipa-replica-prepare' |>> {
+	# NOTE: this also matches against the file parameter from the exporting
+	# side. we do this so that we only pull in what is intended for us, and
+	# as a result, this avoids real duplicate resource conflicts. but NOTE:
+	# this currently depends on all hosts sharing the same value of $vardir
+	Ssh::File::Pull <<| tag == 'ipa-replica-prepare' and file == "${valid_from}" |>> {
 		path => "${vardir}/replica/install/",
 		verify => false,		# rely on mtime
 		pair => false,			# do it now so it happens fast!
