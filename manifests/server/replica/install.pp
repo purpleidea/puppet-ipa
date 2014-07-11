@@ -48,8 +48,12 @@ class ipa::server::replica::install(
 		$valid_fqdn = ''
 	}
 
-	if "${valid_fqdn}" == '' {
-		warning("The requested peer: '${valid_fqdn}', isn't ready yet.")
+	if "${ipa_server_installed}" != 'true' {
+		if "${valid_fqdn}" == '' {
+			warning("The requested peer: '${valid_fqdn}', isn't ready yet.")
+		} else {
+			info("The requested peer is: '${valid_fqdn}'.")
+		}
 	}
 
 	$filename = "replica-info-${valid_fqdn}.gpg"
