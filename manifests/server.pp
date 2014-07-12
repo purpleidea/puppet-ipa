@@ -125,6 +125,13 @@ class ipa::server(
 
 	notice(inline_template('valid_peers: <%= @valid_peers.inspect %>'))
 
+	# export the required firewalls...
+	if $shorewall {
+		ipa::server::replica::firewall { $valid_peers["${::fqdn}"]:
+			peer => "${::fqdn}",	# match the manage type pattern
+		}
+	}
+
 	$valid_hostname = "${hostname}"		# TODO: validate ?
 	$valid_domain = downcase($domain)	# TODO: validate ?
 	$valid_realm = $realm ? {
