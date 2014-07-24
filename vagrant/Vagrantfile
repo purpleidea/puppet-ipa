@@ -56,11 +56,17 @@ offset = 100		# start hosts after here
 #puts range[2].to_s	# puppetmaster
 #puts range[3].to_s	# vip
 
-network2 = IPAddr.new '192.168.145.0/24'
-range2 = network2.to_range.to_a
-cidr2 = (32-(Math.log(range2.length)/Math.log(2))).to_i
-offset2 = 2
-netmask2 = IPAddr.new('255.255.255.255').mask(cidr2).to_s
+#
+#	puppetmaster
+#
+puppet_ip = range[2].to_s
+puppet_hostname = 'puppet'
+
+#
+#	vip
+#
+vip_ip = range[3].to_s
+vip_hostname = 'ipa'
 
 # mutable by ARGV and settings file
 count = 1		# default number of ipa hosts to build
@@ -190,17 +196,6 @@ else
 	snoop = []
 end
 
-# figure out which hosts are getting destroyed
-destroy = ARGV.select { |x| !x.start_with?('-') }
-if destroy.length > 0 and destroy[0] == 'destroy'
-	destroy.shift	# left over array destroy should be list of hosts or []
-	if destroy.length == 0
-		destroy = true	# destroy everything
-	end
-else
-	destroy = false		# destroy nothing
-end
-
 # figure out which hosts are getting provisioned
 provision = ARGV.select { |x| !x.start_with?('-') }
 if provision.length > 0 and ['up', 'provision'].include?(provision[0])
@@ -224,8 +219,6 @@ end
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-	#config.landrush.enable	# TODO ?
-
 	#
 	#	box (pre-built base image)
 	#
@@ -239,6 +232,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	#	sync type
 	#
 	config.vm.synced_folder './', '/vagrant', type: sync	# nfs, rsync
+
+	#
+	#	hostmanager
+	#
+	config.hostmanager.enabled = true
+	config.hostmanager.manage_host = false	# don't manage local /etc/hosts
+	config.hostmanager.ignore_private_ip = false
+	config.hostmanager.include_offline = true	# manage all the hosts!
+	config.hostmanager.fqdn_friendly = true		# fqdns need to work...
+	config.hostmanager.domain_name = domain		# use this domain name!
+	config.hostmanager.extra_hosts = [
+		{
+			:host => "#{vip_hostname}.#{domain}",
+			:ip => "#{vip_ip}",
+			:aliases => ["#{vip_hostname}"],
+		}
+	]
 
 	#
 	#	cache
@@ -263,42 +273,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		end
 	end
 
-	#
-	#	vip
-	#
-	vip_ip = range[3].to_s
-	vip_hostname = 'ipa'
-
-	#
-	#	puppetmaster
-	#
-	puppet_ip = range[2].to_s
-	puppet_hostname = 'puppet'
-	fv = File.join(projectdir, '.vagrant', "#{puppet_hostname}-hosts.done")
-	if destroy.is_a?(TrueClass) or (destroy.is_a?(Array) and destroy.include?(puppet_hostname))
-		if File.exists?(fv)	# safety
-			puts "Unlocking shell provisioning for: #{puppet_hostname}..."
-			File.delete(fv)	# delete hosts token
-		end
-	end
-
 	#puppet_fqdn = "#{puppet_hostname}.#{domain}"
 	config.vm.define :puppet, :primary => true do |vm|
 		vm.vm.hostname = puppet_hostname
-		# red herring network so that management happens here...
-		vm.vm.network :private_network,
-		:ip => range2[2].to_s,
-		:libvirt__netmask => netmask2,
-		#:libvirt__dhcp_enabled => false,	# XXX: not allowed here
-		:libvirt__network_name => 'default'
 
 		# this is the real network that we'll use...
 		vm.vm.network :private_network,
 		:ip => puppet_ip,
 		:libvirt__dhcp_enabled => false,
 		:libvirt__network_name => 'ipa'
-
-		#vm.landrush.host puppet_hostname, puppet_ip	# TODO ?
 
 		# ensure the ipa module is present for provisioning...
 		if provision.is_a?(TrueClass) or (provision.is_a?(Array) and provision.include?(puppet_hostname))
@@ -307,31 +290,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			`cd #{mod} && make ipa &> /dev/null; cd #{cwd}`
 		end
 
-		#
-		#	shell
-		#
-		if not File.exists?(fv)	# only modify /etc/hosts once
-			if provision.is_a?(TrueClass) or (provision.is_a?(Array) and provision.include?(puppet_hostname))
-				File.open(fv, 'w') {}	# touch
-			end
-			vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
-			vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname} ensure=absent"	# so that fqdn works
-
-			vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
-			vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
-			(1..count).each do |i|
-				h = "ipa#{i}"
-				ip = range[offset+i].to_s
-				vm.vm.provision 'shell', inline: "puppet resource host #{h}.#{domain} ip=#{ip} host_aliases=#{h} ensure=present"
-			end
-
-			# hosts entries for all clients
-			(1..clients).each do |i|
-				h = "client#{i}"
-				ip = range[offset+count+i].to_s
-				vm.vm.provision 'shell', inline: "puppet resource host #{h}.#{domain} ip=#{ip} host_aliases=#{h} ensure=present"
-			end
-		end
 		#
 		#	puppet (apply)
 		#
@@ -361,13 +319,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		h = "ipa#{i}"
 		ip = range[offset+i].to_s
 		#fqdn = "#{h}.#{domain}"
-		fvx = File.join(projectdir, '.vagrant', "#{h}-hosts.done")
-		if destroy.is_a?(TrueClass) or (destroy.is_a?(Array) and destroy.include?(h))
-			if File.exists?(fvx)	# safety
-				puts "Unlocking shell provisioning for: #{h}..."
-				File.delete(fvx)	# delete hosts token
-			end
-		end
 
 		if snoop.include?(h)		# should we clean this machine?
 			cmd = "puppet cert clean #{h}.#{domain}"
@@ -380,11 +331,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 		config.vm.define h.to_sym do |vm|
 			vm.vm.hostname = h
-			# red herring network so that management happens here...
-			vm.vm.network :private_network,
-			:ip => range2[offset2+i].to_s,
-			:libvirt__netmask => netmask2,
-			:libvirt__network_name => 'default'
 
 			# this is the real network that we'll use...
 			vm.vm.network :private_network,
@@ -402,35 +348,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			vm.vm.network 'forwarded_port', guest: 80, host: 80
 			vm.vm.network 'forwarded_port', guest: 443, host: 443
 
-			#vm.landrush.host h, ip	# TODO ?
-
-			#
-			#	shell
-			#
-			if not File.exists?(fvx)	# only modify /etc/hosts once
-				if provision.is_a?(TrueClass) or (provision.is_a?(Array) and provision.include?(h))
-					File.open(fvx, 'w') {}	# touch
-				end
-				vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
-				vm.vm.provision 'shell', inline: "puppet resource host #{h} ensure=absent"	# so that fqdn works
-
-				vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
-				vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
-				#vm.vm.provision 'shell', inline: "[ ! -e /root/puppet-cert-is-clean ] && ssh -o 'StrictHostKeyChecking=no' #{puppet_hostname} puppet cert clean #{h}.#{domain} ; touch /root/puppet-cert-is-clean"
-				# hosts entries for all hosts
-				(1..count).each do |j|
-					oh = "ipa#{j}"
-					oip = range[offset+j].to_s	# eg: "192.168.142.#{100+i}"
-					vm.vm.provision 'shell', inline: "puppet resource host #{oh}.#{domain} ip=#{oip} host_aliases=#{oh} ensure=present"
-				end
-
-				# hosts entries for all clients
-				(1..clients).each do |j|
-					oh = "client#{j}"
-					oip = range[offset+count+j].to_s
-					vm.vm.provision 'shell', inline: "puppet resource host #{oh}.#{domain} ip=#{oip} host_aliases=#{oh} ensure=present"
-				end
-			end
 			#
 			#	puppet (agent)
 			#
@@ -473,13 +390,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		h = "client#{i}"
 		ip = range[offset+count+i].to_s
 		#fqdn = "ipa#{i}.#{domain}"
-		fvy = File.join(projectdir, '.vagrant', "#{h}-hosts.done")
-		if destroy.is_a?(TrueClass) or (destroy.is_a?(Array) and destroy.include?(h))
-			if File.exists?(fvy)	# safety
-				puts "Unlocking shell provisioning for: #{h}..."
-				File.delete(fvy)	# delete hosts token
-			end
-		end
 
 		if snoop.include?(h)		# should we clean this machine?
 			cmd = "puppet cert clean #{h}.#{domain}"
@@ -492,11 +402,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
 		config.vm.define h.to_sym do |vm|
 			vm.vm.hostname = h
-			# red herring network so that management happens here...
-			vm.vm.network :private_network,
-			:ip => range2[offset2+count+i].to_s,
-			:libvirt__netmask => netmask2,
-			:libvirt__network_name => 'default'
 
 			# this is the real network that we'll use...
 			vm.vm.network :private_network,
@@ -504,34 +409,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 			:libvirt__dhcp_enabled => false,
 			:libvirt__network_name => 'ipa'
 
-			#vm.landrush.host h, ip	# TODO ?
-
-			#
-			#	shell
-			#
-			if not File.exists?(fvy)	# only modify /etc/hosts once
-				if provision.is_a?(TrueClass) or (provision.is_a?(Array) and provision.include?(h))
-					File.open(fvy, 'w') {}	# touch
-				end
-				vm.vm.provision 'shell', inline: 'puppet resource host localhost.localdomain ip=127.0.0.1 host_aliases=localhost'
-				vm.vm.provision 'shell', inline: "puppet resource host #{h} ensure=absent"	# so that fqdn works
-
-				vm.vm.provision 'shell', inline: "puppet resource host #{vip_hostname}.#{domain} ip=#{vip_ip} host_aliases=#{vip_hostname} ensure=present"
-				vm.vm.provision 'shell', inline: "puppet resource host #{puppet_hostname}.#{domain} ip=#{puppet_ip} host_aliases=#{puppet_hostname} ensure=present"
-				# hosts entries for all hosts
-				(1..count).each do |j|
-					oh = "ipa#{j}"
-					oip = range[offset+j].to_s	# eg: "192.168.142.#{100+i}"
-					vm.vm.provision 'shell', inline: "puppet resource host #{oh}.#{domain} ip=#{oip} host_aliases=#{oh} ensure=present"
-				end
-
-				# hosts entries for all clients
-				(1..clients).each do |j|
-					oh = "client#{j}"
-					oip = range[offset+count+j].to_s
-					vm.vm.provision 'shell', inline: "puppet resource host #{oh}.#{domain} ip=#{oip} host_aliases=#{oh} ensure=present"
-				end
-			end
 			#
 			#	puppet (agent)
 			#

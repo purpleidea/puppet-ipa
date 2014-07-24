@@ -17,6 +17,10 @@ Dependencies:
 * my puppet-puppet module (optional)
 * my puppet-nfs module (optional)
 
+Vagrant (optional):
+* The vagrant integration works with the vagrant-libvirt provider.
+* This requires the vagrant-hostmanager plugin for /etc/hosts management.
+
 
 Happy hacking,
 James Shubin <james@shubin.ca>, https://ttboj.wordpress.com/
