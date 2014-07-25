@@ -51,6 +51,11 @@ module Puppet::Parser::Functions
 			return {}
 		end
 
+		# if we only have one peer, and it's me, then topology is empty
+		if peers.length == 1 and peers[0] == lookupvar('fqdn')
+			return {}
+		end
+
 		result = {}
 
 		i = 0

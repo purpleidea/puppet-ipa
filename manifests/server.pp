@@ -127,8 +127,11 @@ class ipa::server(
 
 	# export the required firewalls...
 	if $shorewall {
-		ipa::server::replica::firewall { $valid_peers["${::fqdn}"]:
-			peer => "${::fqdn}",	# match the manage type pattern
+		# in the single host case, the topology should be an empty hash
+		if has_key($valid_peers, "${::fqdn}") {
+			ipa::server::replica::firewall { $valid_peers["${::fqdn}"]:
+				peer => "${::fqdn}",	# match the manage type pattern
+			}
 		}
 	}
 
@@ -652,9 +655,12 @@ class ipa::server(
 		}
 	}
 
-	# ensure the topology has the right shape...
-	ipa::server::replica::manage { $valid_peers["${::fqdn}"]:	# magic
-		peer => "${::fqdn}",
+	# in the single host case, the topology should be an empty hash
+	if has_key($valid_peers, "${::fqdn}") {
+		# ensure the topology has the right shape...
+		ipa::server::replica::manage { $valid_peers["${::fqdn}"]:	# magic
+			peer => "${::fqdn}",
+		}
 	}
 
 	# this fact gets created once the installation is complete... the first
