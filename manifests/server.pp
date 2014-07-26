@@ -74,6 +74,7 @@ class ipa::server(
 
 	# TODO: should we always include the replica peering or only when used?
 	include ipa::server::replica::peering
+	include ipa::server::replica::master
 	include ipa::common
 	include ipa::vardir
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
@@ -510,8 +511,9 @@ class ipa::server(
 
 	# split ipa-server-install command into a separate file so that it runs
 	# as bash, and also so that it's available to run manually and inspect!
+	# if this installs successfully, tag it so we know which host was first
 	file { "${vardir}/ipa-server-install.sh":
-		content => inline_template("#!/bin/bash\n/usr/sbin/ipa-server-install ${args} --unattended\n"),
+		content => inline_template("#!/bin/bash\n/usr/sbin/ipa-server-install ${args} --unattended && /bin/echo '${::fqdn}' > ${vardir}/ipa_server_replica_master\n"),
 		owner => root,
 		group => root,
 		mode => 700,
@@ -550,6 +552,20 @@ class ipa::server(
 			peers => $valid_peers,
 		}
 
+	}
+
+	# this file is a tag that lets you know which server was the first one!
+	file { "${vardir}/ipa_server_replica_master":
+		owner => root,
+		group => nobody,
+		mode => 600,	# u=rw,go=
+		backup => false,
+		require => [
+			File["${vardir}/"],
+			Exec['ipa-install'],
+		],
+		ensure => present,
+		alias => 'ipa-server-master-flag',
 	}
 
 	# this file is a tag that lets notify know it only needs to run once...
