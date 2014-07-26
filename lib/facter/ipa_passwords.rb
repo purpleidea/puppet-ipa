@@ -75,3 +75,4 @@ Facter.add('ipa_host_passwords') do
 	}
 end
 
+# vim: ts=8

@@ -54,3 +54,4 @@ if not(valid_dir.nil?) and File.directory?(valid_dir)
 	end
 end
 
+# vim: ts=8
