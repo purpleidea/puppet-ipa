@@ -387,6 +387,7 @@ class ipa::server(
 	# It is NOT certain that the key belongs to the person named
 	# in the user ID.  If you *really* know what you are doing,
 	# you may answer the next question with yes.
+	# NOTE: some of these commands (variables) are used in: server/user.pp
 	$gpg_encrypt = "${gpg_cmd} --encrypt --trust-model always --recipient '${gpg_recipient}'"
 	$mail_send = "/bin/mailx -s 'Password for: ${valid_hostname}.${valid_domain}' '${valid_email}'"
 

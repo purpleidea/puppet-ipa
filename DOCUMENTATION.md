@@ -733,8 +733,8 @@ Set to _true_ to have the user password auto generated.
 Save user password to a file. The file is in: _${vardir}/ipa/users/passwords/_.
 
 ####`password_mail`
-Mail out a GPG encrypted password to the admin.
-*TODO*: this option is not yet implemented.
+Mail out a GPG encrypted password to the admin. This requires that the minimum
+requirements for this to work are set in the ipa::server class.
 
 ####`street`
 The users street address.

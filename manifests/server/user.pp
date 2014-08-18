@@ -43,7 +43,7 @@ define ipa::server::user(	# $login or principal as a unique id
 	# password
 	$random = false,	# set to true to have the password generated...
 	$password_file = false,	# save to file in ${vardir}/ipa/users/passwords/
-	$password_mail = false,	# TODO: mail a gpg encrypted password to admin!
+	$password_mail = false,	# mail a gpg encrypted password to the admin user
 
 	# mailing address section (just plain strings, false is unmanaged)
 	$street = false,	# street address
@@ -515,11 +515,22 @@ define ipa::server::user(	# $login or principal as a unique id
 	}
 
 	$gpg_email = $ipa::server::valid_email	# admin email
-	#$gpg_key = $ipa::server::TODO
+	$gpg_sendemail = $ipa::server::gpg_sendemail
+	$gpg_encrypt = $ipa::server::gpg_encrypt	# includes recipient
+
+	$mail_send = "/bin/mailx -s 'Password for: ${valid_login}' '${gpg_email}'"
+	if "${gpg_recipient}" != '' and $gpg_sendemail {
+		$user_password_mail = "/bin/cat | ( ${gpg_encrypt} | (/bin/echo 'GPG(${valid_login} password):'; /bin/cat) | ${mail_send} > /dev/null )"
+	} else {
+		$user_password_mail = ''
+	}
+
 	$prog02 = $password_mail ? {
-		#true => "/bin/cat | /usr/bin/gpg TODO | /bin/mailx -s 'GPG encrypted password' '${gpg_email}'",	# FIXME: add this code!
+		true => "${user_password_mail}",
 		default => '',
 	}
+
+	# TODO: do we also want an option to mail the password directly to the user ?
 
 	if $modify and $random {
 		$proglist = ["${prog01}", "${prog02}"]
