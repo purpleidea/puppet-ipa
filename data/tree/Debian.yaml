@@ -1,0 +1,6 @@
+# ipa/data/tree/Debian.yaml
+---
+ipa::params::package_ipa_server: 'TODO'
+ipa::params::package_ipa_client: 'TODO'
+ipa::params::package_ipa_admintools: 'TODO'
+# vim: ts=8

@@ -35,6 +35,7 @@ class ipa::client(
 	$debug = false,
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
+	include ipa::params
 	include ipa::vardir
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
@@ -72,17 +73,17 @@ class ipa::client(
 		}
 	}
 
-	package { 'ipa-client':
+	package { "${::ipa::params::package_ipa_client}":
 		ensure => present,
 	}
 
 	# an administrator machine requires the ipa-admintools package as well:
-	package { 'ipa-admintools':
+	package { "${::ipa::params::package_ipa_admintools}":
 		ensure => $admin ? {
 			true => present,
 			false => absent,
 		},
-		require => Package['ipa-client'],
+		require => Package["${::ipa::params::package_ipa_client}"],
 	}
 
 	# store the passwords in text files instead of having them on cmd line!
@@ -146,7 +147,7 @@ class ipa::client(
 		onlyif => "${onlyif}",	# needs a password or authentication...
 		unless => "${unless}",	# can't install if already installed...
 		require => [
-			Package['ipa-client'],
+			Package["${::ipa::params::package_ipa_client}"],
 			File["${vardir}/password"],
 		],
 		alias => 'ipa-install',	# same alias as server to prevent both!
