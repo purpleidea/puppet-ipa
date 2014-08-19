@@ -57,7 +57,19 @@ define ipa::server::replica::manage(	# to
 	# NOTE: this shouldn't depend on the VIP because it runs on each host...
 	exec { "/usr/sbin/ipa-replica-manage connect '${peer}' '${valid_peer}'":
 		logoutput => on_failure,
-		onlyif => "${::ipa::common::ipa_installed}",
+		onlyif => [
+			"${::ipa::common::ipa_installed}",	# i am ready
+			# this check is used to see if my peer is "ready" to
+			# accept any ipa-replica-manage connect commands. if
+			# it is, then it must mean that ipa is installed and
+			# running, even though this check tool isn't exactly
+			# designed for this particular type of check case...
+			# NOTE: this avoids unnecessary 'ipa-replica-manage'
+			# calls which would error in 3.0.0 with the message:
+			# You cannot connect to a previously deleted master.
+			# INFO: https://fedorahosted.org/freeipa/ticket/3105
+			"/usr/sbin/ipa-replica-conncheck -R '${valid_peer}'",
+		],
 		unless => "/usr/sbin/ipa-replica-manage list '${peer}' | /bin/awk -F ':' '{print \$1}' | /bin/grep -qxF '${valid_peer}'",
 		timeout => 900,		# hope it doesn't take more than 15 min
 		before => Exec['ipa-clean-peers'],	# try to connect first!
