@@ -246,7 +246,7 @@ or to only include services:
 
 ```puppet
 # pull down any defined FreeIPA services.
-include ipa::client::host::deploy
+include ipa::client::service::deploy
 ```
 
 For an NFS host (which is a FreeIPA client), you might want to use:
