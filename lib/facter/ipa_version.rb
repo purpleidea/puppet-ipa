@@ -31,11 +31,11 @@ if ipa == ''
 	ipa = 'ipa-server'
 end
 
+#confine :operatingsystem => %w{CentOS, RedHat, Fedora}
+# TODO: add a long TTL to avoid repeated yum noise
 cmdout = Facter::Util::Resolution.exec(yum+" info "+ipa+" 2> /dev/null | /bin/grep '^Version' | /bin/awk -F ':' '{print $2}'")
 if cmdout != nil
 	Facter.add('ipa_version') do
-		#confine :operatingsystem => %w{CentOS, RedHat, Fedora}
-		# TODO: add a long TTL to avoid repeated yum noise
 		setcode {
 			cmdout.strip
 		}
