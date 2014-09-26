@@ -18,6 +18,7 @@
 class ipa::server(
 	$hostname = $::hostname,
 	$domain = $::domain,
+	$ipa_ipaddress = '',
 	$realm = '',			# defaults to upcase($domain)
 	$vip = '',			# virtual ip of the replica master host
 	$peers = {},			# specify the peering topology by fqdns
@@ -508,6 +509,14 @@ class ipa::server(
 		},
 	}
 
+	$args12 = $ipa_ipaddress ? {
+		'' => '',
+		default => $dns ? {
+			true => "--ip-address=${ipa_ipaddress} --no-host-dns",
+			default => "--ip-address=${ipa_ipaddress}",
+		},
+	}
+
 	$arglist = [
 		"${args01}",
 		"${args02}",
@@ -520,6 +529,7 @@ class ipa::server(
 		"${args09}",
 		"${args10}",
 		"${args11}",
+		"${args12}",
 	]
 	#$args = inline_template('<%= arglist.delete_if {|x| x.empty? }.join(" ") %>')
 	$args = join(delete($arglist, ''), ' ')
