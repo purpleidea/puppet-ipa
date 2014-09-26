@@ -36,6 +36,22 @@ class ipa::client(
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
 	include ipa::vardir
+
+	case $::osfamily {
+		'RedHat': {
+			if $::operatingsystem == 'Fedora' {
+				$ipa_client_pkgname = 'freeipa-client'
+				$ipa_admintools_pkgname = 'freeipa-admintools'
+			} else {
+				$ipa_client_pkgname = 'ipa-client'
+				$ipa_admintools_pkgname = 'ipa-admintools'
+			}
+		}
+		default: {
+			fail('Unsupported OS')
+		}
+	}
+
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
@@ -73,6 +89,7 @@ class ipa::client(
 	}
 
 	package { 'ipa-client':
+		name => $ipa_client_pkgname,
 		ensure => present,
 	}
 
@@ -82,6 +99,7 @@ class ipa::client(
 			true => present,
 			false => absent,
 		},
+		name => $ipa_admintools_pkgname,
 		require => Package['ipa-client'],
 	}
 
