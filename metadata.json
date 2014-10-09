@@ -9,7 +9,7 @@
 	"issues_url": null,
 	"description": "UNKNOWN",
 	"dependencies": [
-		{ "name": "puppetlabs/stdlib", "version_requirement": ">= 4.0.0" },
+		{ "name": "puppetlabs/stdlib", "version_requirement": ">= 4.0.0" }
 	]
 }
 
