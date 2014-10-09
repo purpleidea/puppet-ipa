@@ -1,6 +1,6 @@
 {
 	"name": "purpleidea-ipa",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"author": "James Shubin",
 	"summary": "FreeIPA templating module by James",
 	"license": "GNU Affero General Public License, Version 3.0+",
