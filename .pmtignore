@@ -1,0 +1,8 @@
+# files to ignore from module building
+docs/
+hacking/
+old/
+pkg/
+tmp/
+vagrant/
+video/

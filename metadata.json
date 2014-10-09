@@ -1,0 +1,15 @@
+{
+	"name": "purpleidea-ipa",
+	"version": "0.0.1",
+	"author": "James Shubin",
+	"summary": "FreeIPA templating module by James",
+	"license": "GNU Affero General Public License, Version 3.0+",
+	"source": "https://github.com/purpleidea/puppet-ipa/",
+	"project_page": "https://github.com/purpleidea/puppet-ipa/",
+	"issues_url": null,
+	"description": "UNKNOWN",
+	"dependencies": [
+		{ "name": "puppetlabs/stdlib", "version_requirement": ">= 4.0.0" },
+	]
+}
+
