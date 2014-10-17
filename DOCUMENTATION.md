@@ -1,5 +1,6 @@
 #Puppet-IPA
-<!---
+
+<!--
 FreeIPA templating module by James
 Copyright (C) 2012-2013+ James Shubin
 Written by James Shubin <james@shubin.ca>
@@ -17,6 +18,7 @@ GNU Affero General Public License for more details.
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
+
 ##A FreeIPA Puppet module by [James](https://ttboj.wordpress.com/)
 ####Available from:
 ####[https://github.com/purpleidea/puppet-ipa/](https://github.com/purpleidea/puppet-ipa/)
