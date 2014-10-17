@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ####Also available from:
 ####[https://gitorious.org/purpleidea/puppet-ipa/](https://gitorious.org/purpleidea/puppet-ipa/)
 
-####This documentation is available in: [Markdown](https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) or [PDF](https://github.com/purpleidea/puppet-ipa/raw/master/puppet-ipa-documentation.pdf) format.
+####This documentation is available in: [Markdown](https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) or [PDF](https://pdfdoc-purpleidea.rhcloud.com/pdf/https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) format.
 
 ####Table of Contents
 
