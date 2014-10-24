@@ -18,6 +18,7 @@
 class ipa::server(
 	$hostname = $::hostname,
 	$domain = $::domain,
+	$ipa_ipaddress = '',
 	$realm = '',			# defaults to upcase($domain)
 	$vip = '',			# virtual ip of the replica master host
 	$peers = {},			# specify the peering topology by fqdns
@@ -79,6 +80,26 @@ class ipa::server(
 	include ipa::vardir
 	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
 	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+
+	case $::osfamily {
+		'RedHat': {
+			if $::operatingsystem == 'Fedora' {
+				$ipa_server_pkgname = 'freeipa-server'
+			} else {
+				$ipa_server_pkgname = 'ipa-server'
+				package { 'python-argparse':		# used by diff.py
+					ensure => present,
+					before => [
+						Package['ipa-server'],
+						File["${vardir}/diff.py"],
+					],
+				}
+			}
+		}
+		default: {
+			fail('Unsupported OS')
+		}
+	}
 
 	if "${vip}" != '' {
 		if ! ($vip =~ /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/) {
@@ -201,17 +222,13 @@ class ipa::server(
 		}
 	}
 
-	package { 'python-argparse':		# used by diff.py
-		ensure => present,
-		before => Package['ipa-server'],
-	}
-
 	package { 'pwgen':			# used to generate passwords
 		ensure => present,
 		before => Package['ipa-server'],
 	}
 
 	package { 'ipa-server':
+		name => $ipa_server_pkgname,
 		ensure => present,
 	}
 
@@ -224,7 +241,6 @@ class ipa::server(
 		ensure => present,
 		require => [
 			Package['ipa-server'],
-			Package['python-argparse'],
 			File["${vardir}/"],
 		],
 	}
@@ -493,6 +509,14 @@ class ipa::server(
 		},
 	}
 
+	$args12 = $ipa_ipaddress ? {
+		'' => '',
+		default => $dns ? {
+			true => "--ip-address=${ipa_ipaddress} --no-host-dns",
+			default => "--ip-address=${ipa_ipaddress}",
+		},
+	}
+
 	$arglist = [
 		"${args01}",
 		"${args02}",
@@ -505,6 +529,7 @@ class ipa::server(
 		"${args09}",
 		"${args10}",
 		"${args11}",
+		"${args12}",
 	]
 	#$args = inline_template('<%= arglist.delete_if {|x| x.empty? }.join(" ") %>')
 	$args = join(delete($arglist, ''), ' ')
