@@ -44,7 +44,7 @@ define ipa::server::service(
 
 	# TODO: a better regexp magician could probably do a better job :)
 	# nfs/nfs.example.com@EXAMPLE.COM
-	$r = '^([a-zA-Z][a-zA-Z0-9]*)(/([a-z][a-z\.\-]*)(@([A-Z][A-Z\.\-]*)){0,1}){0,1}$'
+	$r = '^([a-zA-Z][a-zA-Z0-9]*)(/([a-z0-9][a-z0-9\.\-]*)(@([A-Z][A-Z\.\-]*)){0,1}){0,1}$'
 
 	$a = regsubst("${name}", $r, '\1')	# service (nfs)
 	$b = regsubst("${name}", $r, '\3')	# fqdn (nfs.example.com)
