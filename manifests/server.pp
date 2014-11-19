@@ -197,7 +197,7 @@ class ipa::server(
 	$valid_fqdn = "${valid_hostname}.${valid_domain}"
 
 	if $dns {
-		package { "${::ipa::params::package_bind}":
+		package { $::ipa::params::package_bind:
 			ensure => present,
 			before => Package["${::ipa::params::package_ipa_server}"],
 		}
