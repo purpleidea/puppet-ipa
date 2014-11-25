@@ -56,24 +56,26 @@ define ipa::client::host(
 		fail('A $domain inconsistency was found.')
 	}
 
-	class { '::ipa::client':
-		# NOTE: this should transfer most of the params from ipa::client
-		name => $name,		# often the fqdn, but necessarily
-		hostname => $valid_hostname,
-		domain => $valid_domain,
-		realm => $realm,
-		server => $server,
-		password => $password,
-		admin => $admin,
-		ssh => $ssh,
-		sshd => $sshd,
-		ntp => $ntp,
-		ntp_server => $ntp_server,
-		shorewall => $shorewall,
-		zone => $zone,
-		allow => $allow,
-		debug => $debug,
-		ensure => $ensure,
+	unless defined(Class['::ipa::client']) {
+		class { '::ipa::client':
+			# NOTE: this should transfer most of the params from ipa::client
+			name => $name,		# often the fqdn, but necessarily
+			hostname => $valid_hostname,
+			domain => $valid_domain,
+			realm => $realm,
+			server => $server,
+			password => $password,
+			admin => $admin,
+			ssh => $ssh,
+			sshd => $sshd,
+			ntp => $ntp,
+			ntp_server => $ntp_server,
+			shorewall => $shorewall,
+			zone => $zone,
+			allow => $allow,
+			debug => $debug,
+			ensure => $ensure,
+		}
 	}
 }
 
