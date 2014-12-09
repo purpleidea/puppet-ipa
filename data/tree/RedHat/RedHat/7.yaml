@@ -1,0 +1,5 @@
+# ipa/data/tree/RedHat/RedHat/7.0.yaml
+---
+ipa::params::package_python_argparse: ''	# doesn't exist
+
+# vim: ts=8
