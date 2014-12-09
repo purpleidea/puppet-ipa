@@ -223,7 +223,9 @@ define ipa::server::service(
 		comment => "${comment}",
 		ensure => $ensure,
 		require => Ipa::Client::Host["${name}"],	# should match!
-		tag => "${name}",					# bonus
+# TODO: Tag names should match the following regular expression: \A[a-z0-9_][a-z0-9_:\.\-]*\Z
+# This tag is useless if we have name for example in format of ${service}/${fqdn}@${domain}
+#		tag => "${name}",					# bonus
 	}
 }
 
