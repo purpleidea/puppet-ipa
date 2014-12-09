@@ -149,6 +149,10 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
+	# TODO: user @abraverm asked about if we could just $watch, but instead of
+	# modifying, just alert the admin, so they could update their own data
+	# storage, or alternatively send them a hiera data patch with the change...
+	# well, yes this could be possible, but i'm not writing the patch right now
 	if $watch and (! $modify) {
 		fail('You must be able to $modify to be able to $watch.')
 	}
