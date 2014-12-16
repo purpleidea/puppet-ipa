@@ -65,7 +65,7 @@ class ipa::server::service::base {
 
 	# these are template variables for the clean.sh.erb script
 	$id_dir = 'services'
-	$ls_cmd = '/usr/bin/ipa service-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^krbprincipalname:" | /bin/cut -b 18-'	# show ipa services
+	$ls_cmd = '/usr/bin/ipa service-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep -i "^krbprincipalname:" | /bin/cut -b 18-'	# show ipa services
 	$rm_cmd = '/usr/bin/ipa service-del '	# delete ipa services
 	$fs_chr = ' '
 	$suffix = '.service'

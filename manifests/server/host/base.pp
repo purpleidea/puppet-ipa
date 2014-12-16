@@ -56,7 +56,7 @@ class ipa::server::host::base {
 
 	# these are template variables for the clean.sh.erb script
 	$id_dir = 'hosts'
-	$ls_cmd = '/usr/bin/ipa host-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^fqdn:" | /bin/cut -b 6-'	# show ipa hosts
+	$ls_cmd = '/usr/bin/ipa host-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep -i "^fqdn:" | /bin/cut -b 6-'	# show ipa hosts
 	# TODO: i don't understand all the implications of the --updatedns arg!
 	# we should probably change the dns arg based on if dns is on or not...
 	$rm_cmd = $dns ? {	# delete ipa hosts

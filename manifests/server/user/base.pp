@@ -56,7 +56,7 @@ class ipa::server::user::base {
 
 	# these are template variables for the clean.sh.erb script
 	$id_dir = 'users'
-	$ls_cmd = '/usr/bin/ipa user-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^uid:" | /bin/cut -b 5-'	# show ipa users
+	$ls_cmd = '/usr/bin/ipa user-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep -i "^uid:" | /bin/cut -b 5-'	# show ipa users
 	$rm_cmd = '/usr/bin/ipa user-del '	# delete ipa users
 	$fs_chr = ' '
 	$suffix = '.user'

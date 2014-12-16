@@ -332,8 +332,8 @@ define ipa::server::host(
 				# /tree/ipalib/plugins/host.py#n642 (approx...)
 				# NOTE: this uses a single equals sign for test
 				onlyif => [
-					"/usr/bin/test \"`/usr/bin/ipa host-show '${valid_fqdn}' --raw | /usr/bin/tr -d ' ' | /bin/grep '^has_password:' | /bin/cut -b 14-`\" = 'False'",
-					"/usr/bin/test \"`/usr/bin/ipa host-show '${valid_fqdn}' --raw | /usr/bin/tr -d ' ' | /bin/grep '^has_keytab:' | /bin/cut -b 12-`\" = 'False'",
+					"/usr/bin/test \"`/usr/bin/ipa host-show '${valid_fqdn}' --raw | /usr/bin/tr -d ' ' | /bin/grep '^has_password:' | /bin/cut -b 14- | /usr/bin/tr '[:upper:]' '[:lower:]'`\" = 'false'",
+					"/usr/bin/test \"`/usr/bin/ipa host-show '${valid_fqdn}' --raw | /usr/bin/tr -d ' ' | /bin/grep '^has_keytab:' | /bin/cut -b 12- | /usr/bin/tr '[:upper:]' '[:lower:]'`\" = 'false'",
 				],
 				logoutput => on_failure,
 				notify => Exec["ipa-server-host-qmod-${name}"],
