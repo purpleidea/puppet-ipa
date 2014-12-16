@@ -1,5 +1,8 @@
 # ipa/data/tree/RedHat/Fedora.yaml
 ---
 ipa::params::package_python_argparse: ''	# doesn't exist
+ipa::params::package_ipa_server: 'freeipa-server'
+ipa::params::package_ipa_client: 'freeipa-client'
+ipa::params::package_ipa_admintools: 'freeipa-admintools'
 
 # vim: ts=8
