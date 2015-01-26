@@ -3,7 +3,7 @@
 [![Build Status](https://secure.travis-ci.org/purpleidea/puppet-ipa.png)](http://travis-ci.org/purpleidea/puppet-ipa)
 
 ## Documentation:
-Please see: [DOCUMENTATION.md](DOCUMENTATION.md) or [puppet-ipa-documentation.pdf](puppet-ipa-documentation.pdf).
+Please see: [DOCUMENTATION.md](DOCUMENTATION.md) or [PDF](https://pdfdoc-purpleidea.rhcloud.com/pdf/https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md).
 
 ## Installation:
 Please read the [INSTALL](INSTALL) file for instructions on getting this installed.
