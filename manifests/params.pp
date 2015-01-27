@@ -32,7 +32,7 @@ class ipa::params(
 	#$service_ = '',	# TODO
 
 	# external modules...
-	#$include_puppet_facter = true,	# TODO ?
+	$include_puppet_facter = false,	# TODO: currently unused, so set to false
 
 	# misc...
 	#$misc_ = '',	# TODO
