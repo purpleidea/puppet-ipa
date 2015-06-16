@@ -25,8 +25,8 @@ SPEC = rpmbuild/SPECS/puppet-ipa.spec
 SOURCE = rpmbuild/SOURCES/puppet-ipa-$(VERSION).tar.bz2
 SRPM = rpmbuild/SRPMS/puppet-ipa-$(VERSION)-$(RELEASE).src.rpm
 RPM = rpmbuild/RPMS/puppet-ipa-$(VERSION)-$(RELEASE).rpm
-SERVER = 'download.gluster.org'
-REMOTE_PATH = 'purpleidea/puppet-ipa'
+SERVER = 'dl.fedoraproject.org'
+REMOTE_PATH = 'pub/puppet-ipa'
 
 all: docs rpm
 
