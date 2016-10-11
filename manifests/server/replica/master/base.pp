@@ -27,7 +27,7 @@ class ipa::server::replica::master::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${vardir}/replica/"],
 	}
 }

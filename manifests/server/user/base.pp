@@ -26,7 +26,7 @@ class ipa::server::user::base {
 	# since we don't want to purge them, we need to exclude them...
 	$user_always_ignore = ['admin']
 	$user_excludes = $ipa::server::user_excludes
-	$valid_user_excludes = type($user_excludes) ? {
+	$valid_user_excludes = type3x($user_excludes) ? {
 		'string' => [$user_excludes],
 		'array' => $user_excludes,
 		'boolean' => $user_excludes ? {
@@ -39,7 +39,7 @@ class ipa::server::user::base {
 		default => false,	# trigger error...
 	}
 
-	if type($valid_user_excludes) != 'array' {
+	if type3x($valid_user_excludes) != 'array' {
 		fail('The $user_excludes must be an array.')
 	}
 
@@ -49,7 +49,7 @@ class ipa::server::user::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		notify => Exec['ipa-clean-users'],
 		require => File["${vardir}/"],
 	}
@@ -68,7 +68,7 @@ class ipa::server::user::base {
 		content => template('ipa/clean.sh.erb'),
 		owner => root,
 		group => nobody,
-		mode => 700,			# u=rwx
+		mode => '700',			# u=rwx
 		backup => false,		# don't backup to filebucket
 		ensure => present,
 		require => File["${vardir}/"],
@@ -90,7 +90,7 @@ class ipa::server::user::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${vardir}/users/"],
 	}
 }

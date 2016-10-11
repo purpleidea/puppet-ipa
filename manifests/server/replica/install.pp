@@ -80,7 +80,7 @@ class ipa::server::replica::install(
 		ensure => present,
 		owner => root,
 		group => nobody,
-		mode => 600,			# u=rw
+		mode => '600',			# u=rw
 		backup => false,		# don't backup to filebucket
 		before => Exec['ipa-install'],
 		require => File["${vardir}/replica/install/"],

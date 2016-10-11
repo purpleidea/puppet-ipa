@@ -41,7 +41,7 @@ class ipa::server::replica::peering(
 		},
 		owner => root,
 		group => nobody,
-		mode => 600,	# might as well...
+		mode => '600',	# might as well...
 		ensure => present,
 		require => File["${vardir}/replica/peering/"],
 	}
@@ -57,7 +57,7 @@ class ipa::server::replica::peering(
 		tag => 'ipa-server-replica-peering',
 		owner => root,
 		group => nobody,
-		mode => 600,
+		mode => '600',
 		ensure => present,
 	}
 

@@ -26,7 +26,7 @@ class ipa::server::host::base {
 	$valid_domain = $ipa::server::valid_domain
 	$host_always_ignore = ["${valid_hostname}.${valid_domain}"]
 	$host_excludes = $ipa::server::host_excludes
-	$valid_host_excludes = type($host_excludes) ? {
+	$valid_host_excludes = type3x($host_excludes) ? {
 		'string' => [$host_excludes],
 		'array' => $host_excludes,
 		'boolean' => $host_excludes ? {
@@ -39,7 +39,7 @@ class ipa::server::host::base {
 		default => false,	# trigger error...
 	}
 
-	if type($valid_host_excludes) != 'array' {
+	if type3x($valid_host_excludes) != 'array' {
 		fail('The $host_excludes must be an array.')
 	}
 
@@ -49,7 +49,7 @@ class ipa::server::host::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		notify => Exec['ipa-clean-hosts'],
 		require => File["${vardir}/"],
 	}
@@ -73,7 +73,7 @@ class ipa::server::host::base {
 		content => template('ipa/clean.sh.erb'),
 		owner => root,
 		group => nobody,
-		mode => 700,			# u=rwx
+		mode => '700',			# u=rwx
 		backup => false,		# don't backup to filebucket
 		ensure => present,
 		require => File["${vardir}/"],
@@ -96,7 +96,7 @@ class ipa::server::host::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${vardir}/hosts/"],
 	}
 
@@ -105,7 +105,7 @@ class ipa::server::host::base {
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${vardir}/hosts/"],
 	}
 }

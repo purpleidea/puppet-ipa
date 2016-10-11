@@ -7,20 +7,20 @@
 #
 # NOTE:
 # The following variables were used to build this script:
-#	id_dir:	<%= id_dir %>
-#	ls_cmd:	<%= ls_cmd %>
-#	rm_cmd:	<%= rm_cmd %>
-#	fs_chr: <%= fs_chr %>
-#	suffix: <%= suffix %>
-#	regexp: <%= regexp.join(' ') %>
-#	ignore: <%= ignore.join(' ') %>
+#	id_dir:	<%= @id_dir %>
+#	ls_cmd:	<%= @ls_cmd %>
+#	rm_cmd:	<%= @rm_cmd %>
+#	fs_chr: <%= @fs_chr %>
+#	suffix: <%= @suffix %>
+#	regexp: <%= @regexp.join(' ') %>
+#	ignore: <%= @ignore.join(' ') %>
 #
 
-for i in `<%= ls_cmd %> | /bin/awk -F '<%= fs_chr %>' '{print $1}'`; do
+for i in `<%= @ls_cmd %> | /bin/awk -F '<%= @fs_chr %>' '{print $1}'`; do
 	#echo "$i"
 	found=false
 	# this section is essentially an in_array()
-	for j in <%= scope.lookupvar('::ipa::vardir::module_vardir').gsub(/\/$/, '') %>/<%= id_dir %>/*<%= suffix %>; do
+	for j in <%= scope.lookupvar('::ipa::vardir::module_vardir').gsub(/\/$/, '') %>/<%= @id_dir %>/*<%= @suffix %>; do
 		[ -e "$j" ] || break	# loop in bash properly
 		#echo "found tag: $j"
 		# compare against first line of the file
@@ -31,18 +31,18 @@ for i in `<%= ls_cmd %> | /bin/awk -F '<%= fs_chr %>' '{print $1}'`; do
 		fi
 	done
 
-<% if ignore.is_a?(Array) and ignore != [] -%>
+<% if @ignore.is_a?(Array) and @ignore != [] -%>
 	# check against built in ignores
-<% ignore.each do |x| -%>
+<% @ignore.each do |x| -%>
 	if [ "$i" == '<%= x %>' ]; then
 		found=true
 	fi
 <% end -%>
 
 <% end -%>
-<% if regexp.is_a?(Array) and regexp != [] -%>
+<% if @regexp.is_a?(Array) and @regexp != [] -%>
 	# quoting the match pattern indicate a string match (bash v3.2+)
-<% regexp.each do |m| -%>
+<% @regexp.each do |m| -%>
 	if [[ "$i" =~ <%= m %> ]]; then
 		found=true
 	fi
@@ -52,7 +52,7 @@ for i in `<%= ls_cmd %> | /bin/awk -F '<%= fs_chr %>' '{print $1}'`; do
 	# if not found, not matched, and not ignored, then it should be removed
 	if ! $found; then
 		# echo "Removing: $i"
-		<%= rm_cmd %>"$i"
+		<%= @rm_cmd %>"$i"
 	fi
 done
 

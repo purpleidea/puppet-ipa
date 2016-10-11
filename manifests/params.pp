@@ -63,7 +63,7 @@ class ipa::params(
 			content => inline_template('<%= @hash.to_yaml %>'),
 			owner => root,
 			group => root,
-			mode => 644,		# u=rw,go=r
+			mode => '644',		# u=rw,go=r
 			ensure => present,
 		}
 	}

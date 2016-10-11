@@ -92,7 +92,7 @@ class ipa::client(
 		content => "${password}\n",		# temporarily secret...
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		backup => false,
 		require => File["${vardir}/"],
 		ensure => present,
@@ -158,7 +158,7 @@ class ipa::client(
 		content => "true\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		backup => false,
 		require => [
 			File["${vardir}/"],

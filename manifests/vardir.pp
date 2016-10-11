@@ -30,7 +30,7 @@ class ipa::vardir {	# module vardir snippet
 			force => true,		# also purge subdirs and links
 			owner => root,
 			group => nobody,
-			mode => 600,
+			mode => '600',
 			backup => false,	# don't backup to filebucket
 			#before => File["${module_vardir}"],	# redundant
 			#require => Package['puppet'],	# no puppet module seen
@@ -44,7 +44,7 @@ class ipa::vardir {	# module vardir snippet
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${tmp}"],	# File['/var/lib/puppet/tmp/']
 	}
 }

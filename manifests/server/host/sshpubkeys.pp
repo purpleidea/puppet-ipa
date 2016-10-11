@@ -31,7 +31,7 @@ define ipa::server::host::sshpubkeys(	# $name matches ipa::server::host $name
 			content => "${rsa}\n",
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			# this before is essential, and it implies that it will also go
 			# before the "ipa-server-host-mod-${name}" exec, because of the
@@ -47,7 +47,7 @@ define ipa::server::host::sshpubkeys(	# $name matches ipa::server::host $name
 			content => "${dsa}\n",
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			# this before is essential, and it implies that it will also go
 			# before the "ipa-server-host-mod-${name}" exec, because of the

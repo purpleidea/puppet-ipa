@@ -64,7 +64,7 @@ define ipa::server::host(
 		default => "${name}",			# had dots present...
 	}
 
-	$valid_sshpubkeys = type($sshpubkeys) ? {
+	$valid_sshpubkeys = type3x($sshpubkeys) ? {
 		'string' => "${sshpubkeys}" ? {
 			# BUG: lol: https://projects.puppetlabs.com/issues/15813
 			'' => [],	# assume managed but empty (rm sshkeys)
@@ -103,7 +103,7 @@ define ipa::server::host(
 	# array means: managed, set these keys exactly, and remove when it's []
 	# boolean false means: unmanaged, don't set or get anything... empty ''
 	# boolean true means: managed, get the keys automatically (super magic)
-	$args02 = type($valid_sshpubkeys) ? {
+	$args02 = type3x($valid_sshpubkeys) ? {
 		# we always have to at least specify the '--sshpubkey=' if this
 		# is empty, because otherwise we have no way to remove old keys
 		'array' => inline_template('<% if valid_sshpubkeys == [] %>--sshpubkey=<% else %><%= valid_sshpubkeys.map {|x| "--sshpubkey=\'"+x+"\'" }.join(" ") %><% end %>'),
@@ -176,7 +176,7 @@ define ipa::server::host(
 		content => "${valid_fqdn}\n${args}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		require => File["${vardir}/hosts/"],
 		ensure => present,
 	}
@@ -185,7 +185,7 @@ define ipa::server::host(
 		content => "${valid_fqdn}\n${qargs}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		require => File["${vardir}/hosts/"],
 		ensure => present,
 	}
@@ -196,7 +196,7 @@ define ipa::server::host(
 			# no content! this is a tag, content comes in by echo !
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			notify => $modify ? {
 				false => undef,	# can't notify if not modifying
@@ -210,7 +210,7 @@ define ipa::server::host(
 			content => "${password}\n",	# top secret (briefly!)
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			notify => $modify ? {
 				false => undef,	# can't notify if not modifying
@@ -230,7 +230,7 @@ define ipa::server::host(
 		recurse => true,		# recursively manage directory
 		purge => true,			# purge all unmanaged files
 		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => 600, backup => false,
+		owner => root, group => nobody, mode => '600', backup => false,
 		require => File["${vardir}/hosts/sshpubkeys/"],
 	}
 

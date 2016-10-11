@@ -137,7 +137,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => "${valid_login}/${valid_instance}@${valid_realm}",
 	}
 
-	$valid_principal = type($principal) ? {
+	$valid_principal = type3x($principal) ? {
 		'string' => "${principal}" ? {
 			'' => "${auto_principal}",
 			default => "${principal}",	# just do what you want
@@ -173,7 +173,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => "--last='${last}'",
 	}
 
-	$args03 = type($cn) ? {
+	$args03 = type3x($cn) ? {
 		'string' => "--cn='${cn}'",
 		'boolean' => $cn ? {
 			false => '',
@@ -182,7 +182,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args04 = type($displayname) ? {
+	$args04 = type3x($displayname) ? {
 		'string' => "--displayname='${displayname}'",
 		'boolean' => $displayname ? {
 			false => '',
@@ -191,36 +191,36 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args05 = type($initials) ? {
+	$args05 = type3x($initials) ? {
 		'string' => "--initials='${displayname}'",
 		'boolean' => $initials ? {
 			false => '',
 			# NOTE: [0,1] is a version robust way to get index 0...
-			default => sprintf("--initials='%s'", inline_template('<%= first[0,1]+last[0,1] %>')),
+                        default => "--initials='${first[0,1]}${last[0,1]}'",
 		},
 		default => '',
 	}
 
 	# email can provide a sensible default
 	$default_email_domain = $ipa::server::default_email_domain
-	$valid_email = type($email) ? {
+	$valid_email = type3x($email) ? {
 		'string' => "${email}" ? {
-			'' => [],	# assume managed but empty (rm values)
-			default => ["${email}"],
+			'' => '',	# assume managed but empty (rm values)
+			default => "${email}",
 		},
 		'array' => $email,
 		'boolean' => $email ? {
 			false => '',	# unmanaged
-			default => ["${valid_login}@${default_email_domain}"],	# sensible default
+			default => "${valid_login}@${default_email_domain}",	# sensible default
 		},
 		default => '',	# unmanaged
 	}
-	$args06 = type($valid_email) ? {
-		'array' => inline_template('<% if valid_email == [] %>--email=<% else %><%= valid_email.map {|x| "--email=\'"+x+"\'" }.join(" ") %><% end %>'),
+	$args06 = type3x($valid_email) ? {
+                'string' => "--email='${valid_email}'",
 		default => '',	# unmanaged
 	}
 
-	$args07 = type($gecos) ? {
+	$args07 = type3x($gecos) ? {
 		'string' => "--gecos='${gecos}'",
 		'boolean' => $gecos ? {
 			false => '',
@@ -230,19 +230,19 @@ define ipa::server::user(	# $login or principal as a unique id
 	}
 
 	# TODO: validate id ranges ?
-	$args08 = type($uid) ? {
+	$args08 = type3x($uid) ? {
 		'string' => "--uid='${uid}'",
 		'integer' => "--uid='${uid}'",
 		default => '',
 	}
 
 	# TODO: validate id ranges ?
-	$args09 = type($gid) ? {
+	$args09 = type3x($gid) ? {
 		'string' => "--gidnumber='${gid}'",
 		'integer' => "--gidnumber='${gid}'",
 		'boolean' => $gid ? {
 			false => '',
-			default => type($uid) ? {	# auto try to match uid
+			default => type3x($uid) ? {	# auto try to match uid
 				'string' => "--gidnumber='${uid}'",	# uid !
 				'integer' => "--gidnumber='${uid}'",	# uid !
 				default => '',	# auto
@@ -252,7 +252,7 @@ define ipa::server::user(	# $login or principal as a unique id
 	}
 
 	$default_shell = $ipa::server::default_shell
-	$args10 = type($shell) ? {
+	$args10 = type3x($shell) ? {
 		'string' => "--shell='${shell}'",
 		'boolean' => $shell ? {
 			false => '',
@@ -263,11 +263,11 @@ define ipa::server::user(	# $login or principal as a unique id
 
 	# TODO: the home stuff seems to not use trailing slashes. can i add it?
 	$default_homes = $ipa::server::default_homes
-	$args11 = type($home) ? {
+	$args11 = type3x($home) ? {
 		'string' => sprintf("--homedir='%s'", regsubst("${home}" , '\/$', '')),
 		'boolean' => $home ? {
 			false => '',
-			default => type($default_homes) ? {
+			default => type3x($default_homes) ? {
 				'string' => sprintf("--homedir='%s/${valid_login}'", regsubst("${default_homes}" , '\/$', '')),
 				# TODO: warning ?
 				default => '',	# can't manage, parent is false
@@ -277,7 +277,7 @@ define ipa::server::user(	# $login or principal as a unique id
 	}
 
 	# users individual ssh public keys
-	$valid_sshpubkeys = type($sshpubkeys) ? {
+	$valid_sshpubkeys = type3x($sshpubkeys) ? {
 		'string' => "${sshpubkeys}" ? {
 			'' => [],	# assume managed but empty (rm values)
 			default => ["${sshpubkeys}"],
@@ -285,13 +285,13 @@ define ipa::server::user(	# $login or principal as a unique id
 		'array' => $sshpubkeys,
 		default => '',	# unmanaged
 	}
-	$args12 = type($valid_sshpubkeys) ? {
+	$args12 = type3x($valid_sshpubkeys) ? {
 		'array' => inline_template('<% if valid_sshpubkeys == [] %>--sshpubkey=<% else %><%= valid_sshpubkeys.map {|x| "--sshpubkey=\'"+x+"\'" }.join(" ") %><% end %>'),
 		default => '',	# unmanaged
 	}
 
 	# mailing address section
-	$args13 = type($street) ? {
+	$args13 = type3x($street) ? {
 		'string' => "--street='${street}'",
 		'boolean' => $street ? {
 			true => '--street=',	# managed
@@ -300,7 +300,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',			# whatever and unmanaged
 	}
 
-	$args14 = type($city) ? {
+	$args14 = type3x($city) ? {
 		'string' => "--city='${city}'",
 		'boolean' => $city ? {
 			true => '--city=',
@@ -309,7 +309,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args15 = type($state) ? {	# or province
+	$args15 = type3x($state) ? {	# or province
 		'string' => "--state='${state}'",
 		'boolean' => $state ? {
 			true => '--state=',
@@ -318,7 +318,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args16 = type($postalcode) ? {
+	$args16 = type3x($postalcode) ? {
 		'string' => "--postalcode='${postalcode}'",
 		'boolean' => $postalcode ? {
 			true => '--postalcode=',
@@ -328,7 +328,7 @@ define ipa::server::user(	# $login or principal as a unique id
 	}
 
 	# the following four phone number types can be arrays
-	$valid_phone = type($phone) ? {
+	$valid_phone = type3x($phone) ? {
 		'string' => "${phone}" ? {
 			'' => [],	# assume managed but empty (rm values)
 			default => ["${phone}"],
@@ -336,12 +336,12 @@ define ipa::server::user(	# $login or principal as a unique id
 		'array' => $phone,
 		default => '',	# unmanaged
 	}
-	$args17 = type($valid_phone) ? {
+	$args17 = type3x($valid_phone) ? {
 		'array' => inline_template('<% if valid_phone == [] %>--phone=<% else %><%= valid_phone.map {|x| "--phone=\'"+x+"\'" }.join(" ") %><% end %>'),
 		default => '',	# unmanaged
 	}
 
-	$valid_mobile = type($mobile) ? {
+	$valid_mobile = type3x($mobile) ? {
 		'string' => "${mobile}" ? {
 			'' => [],	# assume managed but empty (rm values)
 			default => ["${mobile}"],
@@ -349,12 +349,12 @@ define ipa::server::user(	# $login or principal as a unique id
 		'array' => $mobile,
 		default => '',	# unmanaged
 	}
-	$args18 = type($valid_mobile) ? {
+	$args18 = type3x($valid_mobile) ? {
 		'array' => inline_template('<% if valid_mobile == [] %>--mobile=<% else %><%= valid_mobile.map {|x| "--mobile=\'"+x+"\'" }.join(" ") %><% end %>'),
 		default => '',	# unmanaged
 	}
 
-	$valid_pager = type($pager) ? {
+	$valid_pager = type3x($pager) ? {
 		'string' => "${pager}" ? {
 			'' => [],	# assume managed but empty (rm values)
 			default => ["${pager}"],
@@ -362,12 +362,12 @@ define ipa::server::user(	# $login or principal as a unique id
 		'array' => $pager,
 		default => '',	# unmanaged
 	}
-	$args19 = type($valid_pager) ? {
+	$args19 = type3x($valid_pager) ? {
 		'array' => inline_template('<% if valid_pager == [] %>--pager=<% else %><%= valid_pager.map {|x| "--pager=\'"+x+"\'" }.join(" ") %><% end %>'),
 		default => '',	# unmanaged
 	}
 
-	$valid_fax = type($fax) ? {
+	$valid_fax = type3x($fax) ? {
 		'string' => "${fax}" ? {
 			'' => [],	# assume managed but empty (rm values)
 			default => ["${fax}"],
@@ -375,13 +375,13 @@ define ipa::server::user(	# $login or principal as a unique id
 		'array' => $fax,
 		default => '',	# unmanaged
 	}
-	$args20 = type($valid_fax) ? {
+	$args20 = type3x($valid_fax) ? {
 		'array' => inline_template('<% if valid_fax == [] %>--fax=<% else %><%= valid_fax.map {|x| "--fax=\'"+x+"\'" }.join(" ") %><% end %>'),
 		default => '',	# unmanaged
 	}
 
 	# other information
-	$args21 = type($jobtitle) ? {	# job title
+	$args21 = type3x($jobtitle) ? {	# job title
 		'string' => "--title='${jobtitle}'",
 		'boolean' => $jobtitle ? {
 			true => '--title=',
@@ -390,7 +390,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args22 = type($orgunit) ? {
+	$args22 = type3x($orgunit) ? {
 		'string' => "--orgunit='${orgunit}'",
 		'boolean' => $orgunit ? {
 			true => '--orgunit=',
@@ -401,7 +401,7 @@ define ipa::server::user(	# $login or principal as a unique id
 
 	# manager requires user exists... this lets us match a user principal
 	$valid_manager = regsubst("${manager}", $r, '\1')	# login (james)
-	$args23 = type($manager) ? {	# this has to match an existing user...
+	$args23 = type3x($manager) ? {	# this has to match an existing user...
 		'string' => "--manager='${valid_manager}'",
 		'boolean' => $manager ? {
 			true => '--manager=',
@@ -410,7 +410,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		default => '',
 	}
 
-	$args24 = type($carlicense) ? {
+	$args24 = type3x($carlicense) ? {
 		'string' => "--carlicense='${carlicense}'",
 		'boolean' => $carlicense ? {
 			true => '--carlicense=',
@@ -429,7 +429,7 @@ define ipa::server::user(	# $login or principal as a unique id
 		content => "${valid_login}\n${args}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		require => File["${vardir}/users/"],
 		ensure => present,
 	}
@@ -439,7 +439,7 @@ define ipa::server::user(	# $login or principal as a unique id
 			# no content! this is a tag, content comes in by echo !
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/users/passwords/"],
 			ensure => present,
@@ -449,7 +449,7 @@ define ipa::server::user(	# $login or principal as a unique id
 	$exists = "/usr/bin/ipa user-show '${valid_login}' > /dev/null 2>&1"
 	# this requires ensures the $manager user exists when we can check that
 	# this melds together the kinit require which is needed by the user add
-	$requires = type($manager) ? {
+	$requires = type3x($manager) ? {
 		'string' => "${manager}" ? {
 			'' => Exec['ipa-server-kinit'],
 			default => $watch ? {

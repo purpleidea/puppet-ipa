@@ -49,7 +49,7 @@ define ipa::server::replica::manage(	# to
 		content => "${valid_peer}\n${args}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		require => File["${vardir}/replica/manage/peers/"],
 		ensure => present,
 	}

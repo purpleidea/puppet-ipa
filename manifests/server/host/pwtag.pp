@@ -31,7 +31,7 @@ define ipa::server::host::pwtag() {
 		content => "# This is a password tag for: ${name}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		backup => false,
 		before => Exec["ipa-host-verify-password-exists-${name}"],
 		require => File["${vardir}/hosts/passwords/"],

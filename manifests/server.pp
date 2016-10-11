@@ -71,7 +71,7 @@ class ipa::server(
 	$peer_excludes = [],		# never purge these peer excludes...
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
-	$FW = '$FW'			# make using $FW in shorewall easier...
+	$fw = '$FW'			# make using $fw in shorewall easier...
 
 	# TODO: should we always include the replica peering or only when used?
 	include ipa::server::replica::peering
@@ -120,7 +120,7 @@ class ipa::server(
 		'flat' => ipa_topology_flat($replica_peers),
 		'ring' => ipa_topology_ring($replica_peers),
 		#'manual' => $peers,
-		default => type($peers) ? {	# 'manual' (default) peering...
+		default => type3x($peers) ? {	# 'manual' (default) peering...
 			'hash' => $peers,	# TODO: validate this data type
 			default => $empty_hash,	# invalid data...
 		},
@@ -153,7 +153,7 @@ class ipa::server(
 		value => "${default_email_domain}",
 	}
 
-	$default_shell = type($shell) ? {
+	$default_shell = type3x($shell) ? {
 		'boolean' => $shell ? {
 			false => false,		# unmanaged
 			default => '/bin/sh',	# the default
@@ -161,21 +161,21 @@ class ipa::server(
 		default => "${shell}",
 	}
 	# we don't manage if value is false, otherwise it's good to go!
-	if ! (type($shell) == 'boolean' and (! $shell)) {
+	if ! (type3x($shell) == 'boolean' and (! $shell)) {
 		ipa::server::config { 'shell':
 			value => "${default_shell}",
 		}
 	}
 
 	# TODO: the home stuff seems to not use trailing slashes. can i add it?
-	$default_homes = type($homes) ? {
+	$default_homes = type3x($homes) ? {
 		'boolean' => $homes ? {
 			false => false,		# unmanaged
 			default => '/home',	# the default
 		},
 		default => "${homes}",
 	}
-	if ! (type($homes) == 'boolean' and (! $homes)) {
+	if ! (type3x($homes) == 'boolean' and (! $homes)) {
 		ipa::server::config { 'homes':
 			value => "${default_homes}",	# XXX: remove trailing slash if present ?
 		}
@@ -227,7 +227,7 @@ class ipa::server(
 		source => 'puppet:///modules/ipa/diff.py',
 		owner => root,
 		group => nobody,
-		mode => 700,			# u=rwx
+		mode => '700',			# u=rwx
 		backup => false,		# don't backup to filebucket
 		ensure => present,
 		require => [
@@ -261,7 +261,7 @@ class ipa::server(
 			purge => true,		# don't purge unmanaged files
 			force => true,		# don't purge subdirs and links
 			# group and other must not have perms or gpg complains!
-			mode => 600,		# u=rw,go=
+			mode => '600',		# u=rw,go=
 			backup => false,
 			require => File["${vardir}/"],
 		}
@@ -271,7 +271,7 @@ class ipa::server(
 		file { "${dm_password_filename}":
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/gpg/"],
 			ensure => present,
@@ -282,7 +282,7 @@ class ipa::server(
 		file { "${admin_password_filename}":
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/gpg/"],
 			ensure => present,
@@ -292,7 +292,7 @@ class ipa::server(
 		file { "${vardir}/gpg/pubring.gpg":
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/gpg/"],
 			ensure => present,
@@ -301,7 +301,7 @@ class ipa::server(
 		file { "${vardir}/gpg/secring.gpg":
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/gpg/"],
 			ensure => present,
@@ -312,7 +312,7 @@ class ipa::server(
 		file { "${vardir}/gpg/trustdb.gpg":
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			require => File["${vardir}/gpg/"],
 			ensure => present,
@@ -332,7 +332,7 @@ class ipa::server(
 			},
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			before => Exec['ipa-gpg-import'],
 			require => File["${vardir}/gpg/"],
@@ -430,7 +430,7 @@ class ipa::server(
 			content => "${dm_password}\n",		# top top secret!
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			before => Exec['ipa-install'],
 			require => File["${vardir}/"],
@@ -447,7 +447,7 @@ class ipa::server(
 			content => "${admin_password}\n",	# top secret!
 			owner => root,
 			group => nobody,
-			mode => 600,	# u=rw,go=
+			mode => '600',	# u=rw,go=
 			backup => false,
 			before => Exec['ipa-install'],
 			require => File["${vardir}/"],
@@ -533,7 +533,7 @@ class ipa::server(
 		content => inline_template("#!/bin/bash\n${::ipa::params::program_ipa_server_install} ${args} --unattended && /bin/echo '${::fqdn}' > ${vardir}/ipa_server_replica_master\n"),
 		owner => root,
 		group => root,
-		mode => 700,
+		mode => '700',
 		ensure => present,
 		require => File["${vardir}/"],
 	}
@@ -575,7 +575,7 @@ class ipa::server(
 	file { "${vardir}/ipa_server_replica_master":
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		backup => false,
 		require => [
 			File["${vardir}/"],
@@ -590,7 +590,7 @@ class ipa::server(
 		#content => "true\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		backup => false,
 		require => [
 			File["${vardir}/"],
@@ -644,46 +644,46 @@ class ipa::server(
 		#ACTION      SOURCE DEST                PROTO DEST  SOURCE  ORIGINAL
 		#                                             PORT  PORT(S) DEST
 		shorewall::rule { 'http': rule => "
-		HTTP/ACCEPT  ${net}    $FW
+		HTTP/ACCEPT  ${net}    $fw
 		", comment => 'Allow HTTP for webui'}
 
 		shorewall::rule { 'https': rule => "
-		HTTPS/ACCEPT  ${net}    $FW
+		HTTPS/ACCEPT  ${net}    $fw
 		", comment => 'Allow HTTPS for webui'}
 
 		shorewall::rule { 'ldap': rule => "
-		LDAP/ACCEPT  ${net}    $FW
+		LDAP/ACCEPT  ${net}    $fw
 		", comment => 'Allow LDAP for 389 server on tcp port 389.'}
 
 		shorewall::rule { 'ldaps': rule => "
-		LDAPS/ACCEPT  ${net}    $FW
+		LDAPS/ACCEPT  ${net}    $fw
 		", comment => 'Allow LDAPS for 389 server on tcp port 636.'}
 
 		shorewall::rule { 'kerberos': rule => "
-		Kerberos/ACCEPT  ${net}    $FW
+		Kerberos/ACCEPT  ${net}    $fw
 		", comment => 'Allow Kerberos for krb5 server on tcp/udp port 88.'}
 
 		# TODO: should i propose this as a shorewall macro ?
 		shorewall::rule { 'kpasswd': rule => "
-		ACCEPT  ${net}    $FW    tcp  464
-		ACCEPT  ${net}    $FW    udp  464
+		ACCEPT  ${net}    $fw    tcp  464
+		ACCEPT  ${net}    $fw    udp  464
 		", comment => 'Allow Kerberos for kpasswd on tcp/udp port 464.'}
 
 		if $ntp {
 			shorewall::rule { 'ntp': rule => "
-			NTP/ACCEPT  ${net}    $FW
+			NTP/ACCEPT  ${net}    $fw
 			", comment => 'Allow NTP on udp port 123.'}
 		}
 
 		if $dns {
 			shorewall::rule { 'dns': rule => "
-			DNS/ACCEPT  ${net}    $FW
+			DNS/ACCEPT  ${net}    $fw
 			", comment => 'Allow DNS on tcp/udp port 53.'}
 		}
 
 		if $dogtag {
 			shorewall::rule { 'dogtag': rule => "
-			ACCEPT  ${net}    $FW    tcp  7389
+			ACCEPT  ${net}    $fw    tcp  7389
 			", comment => 'Allow dogtag certificate system on tcp port 7389.'}
 		}
 	}

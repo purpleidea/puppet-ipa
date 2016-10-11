@@ -102,7 +102,7 @@ define ipa::server::config(
 		fail("Key '${key}' is invalid.")
 	}
 
-	if type($value) != "${etype}" {
+	if type3x($value) != "${etype}" {
 		fail("Ipa::Server::Config[${key}] must be type: ${etype}.")
 	}
 
@@ -127,7 +127,7 @@ define ipa::server::config(
 		fail("Unknown type: ${etype}.")
 	}
 
-	$cutlength = inline_template('<%= (rawkey.length+2).to_s %>')
+        $cutlength = 2 + size($rawkey)
 	exec { "/usr/bin/ipa config-mod ${option}'${safe_value}'":
 		logoutput => on_failure,
 		onlyif => "${::ipa::common::ipa_installed}",

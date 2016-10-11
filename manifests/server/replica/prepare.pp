@@ -46,7 +46,7 @@ define ipa::server::replica::prepare(
 	file { "${valid_file}":
 		owner => root,
 		group => nobody,
-		mode => 600,			# u=rw
+		mode => '600',			# u=rw
 		backup => false,		# don't backup to filebucket
 		ensure => present,
 		require => Exec["ipa-replica-prepare-${name}"],

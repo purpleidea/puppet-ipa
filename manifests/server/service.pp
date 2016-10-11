@@ -134,14 +134,16 @@ define ipa::server::service(
 	}
 
 	$pactype_valid = ['MS-PAC', 'PAD']	# or 'NONE'
-	$pactype_array = type($pactype) ? {
+	$pactype_array = type3x($pactype) ? {
 		'array' => $pactype,
 		'string' => ["${pactype}"],
 		default => [],			# will become 'NONE'
 	}
-	$valid_pactype = split(inline_template('<%= ((pactype_array.delete_if {|x| not pactype_valid.include?(x)}.length == 0) ? ["NONE"] : pactype_array.delete_if {|x| not pactype_valid.include?(x)}).join("#") %>'), '#')
+        if ($pactype in $pactype_valid) {
+                $valid_pactype = $pactype_array
+        }
 
-	$args01 = sprintf("--pac-type='%s'", join($valid_pactype, ','))
+        $args01 = ("--pac-type='${valid_pactype}'")
 
 	$arglist = ["${args01}"]	# future expansion available :)
 	$args = join(delete($arglist, ''), ' ')
@@ -152,7 +154,7 @@ define ipa::server::service(
 		content => "${valid_principal}\n${args}\n",
 		owner => root,
 		group => nobody,
-		mode => 600,	# u=rw,go=
+		mode => '600',	# u=rw,go=
 		require => File["${vardir}/services/"],
 		ensure => present,
 	}
@@ -223,7 +225,7 @@ define ipa::server::service(
 		comment => "${comment}",
 		ensure => $ensure,
 		require => Ipa::Client::Host["${name}"],	# should match!
-		tag => "${name}",					# bonus
+#		tag => "${name}",					# bonus
 	}
 }
 
