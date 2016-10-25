@@ -71,7 +71,7 @@ class ipa::server(
 	$peer_excludes = [],		# never purge these peer excludes...
 	$ensure = present		# TODO: support uninstall with 'absent'
 ) {
-	$fw = '$FW'			# make using $fw in shorewall easier...
+	$fw = '$FW'			# make using $FW in shorewall easier...
 
 	# TODO: should we always include the replica peering or only when used?
 	include ipa::server::replica::peering
@@ -644,46 +644,46 @@ class ipa::server(
 		#ACTION      SOURCE DEST                PROTO DEST  SOURCE  ORIGINAL
 		#                                             PORT  PORT(S) DEST
 		shorewall::rule { 'http': rule => "
-		HTTP/ACCEPT  ${net}    $fw
+		HTTP/ACCEPT  ${net}    ${fw}
 		", comment => 'Allow HTTP for webui'}
 
 		shorewall::rule { 'https': rule => "
-		HTTPS/ACCEPT  ${net}    $fw
+		HTTPS/ACCEPT  ${net}    ${fw}
 		", comment => 'Allow HTTPS for webui'}
 
 		shorewall::rule { 'ldap': rule => "
-		LDAP/ACCEPT  ${net}    $fw
+		LDAP/ACCEPT  ${net}    ${fw}
 		", comment => 'Allow LDAP for 389 server on tcp port 389.'}
 
 		shorewall::rule { 'ldaps': rule => "
-		LDAPS/ACCEPT  ${net}    $fw
+		LDAPS/ACCEPT  ${net}    ${fw}
 		", comment => 'Allow LDAPS for 389 server on tcp port 636.'}
 
 		shorewall::rule { 'kerberos': rule => "
-		Kerberos/ACCEPT  ${net}    $fw
+		Kerberos/ACCEPT  ${net}    ${fw}
 		", comment => 'Allow Kerberos for krb5 server on tcp/udp port 88.'}
 
 		# TODO: should i propose this as a shorewall macro ?
 		shorewall::rule { 'kpasswd': rule => "
-		ACCEPT  ${net}    $fw    tcp  464
-		ACCEPT  ${net}    $fw    udp  464
+		ACCEPT  ${net}    ${fw}    tcp  464
+		ACCEPT  ${net}    ${fw}    udp  464
 		", comment => 'Allow Kerberos for kpasswd on tcp/udp port 464.'}
 
 		if $ntp {
 			shorewall::rule { 'ntp': rule => "
-			NTP/ACCEPT  ${net}    $fw
+			NTP/ACCEPT  ${net}    ${fw}
 			", comment => 'Allow NTP on udp port 123.'}
 		}
 
 		if $dns {
 			shorewall::rule { 'dns': rule => "
-			DNS/ACCEPT  ${net}    $fw
+			DNS/ACCEPT  ${net}    ${fw}
 			", comment => 'Allow DNS on tcp/udp port 53.'}
 		}
 
 		if $dogtag {
 			shorewall::rule { 'dogtag': rule => "
-			ACCEPT  ${net}    $fw    tcp  7389
+			ACCEPT  ${net}    ${fw}    tcp  7389
 			", comment => 'Allow dogtag certificate system on tcp port 7389.'}
 		}
 	}
