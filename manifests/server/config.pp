@@ -17,126 +17,126 @@
 
 # FIXME: some values have not been filled in yet. some are missing: --arguments
 define ipa::server::config(
-	$value
+  $value
 ) {
-	include ipa::common
+  include ipa::common
 
-	$key = "${name}"
+  $key = $name
 
-	$etype = "${key}" ? {	# expected type
-		#'?' => '',			# FIXME: dn
-		#'?' => '',			# --maxusername
-		'homes' => 'string',
-		'shell' => 'string',
-		#'?' => '',			# --defaultgroup
-		'emaildomain' => 'string',
-		#'?' => '',			# --searchtimelimit
-		#'?' => '',			# --searchrecordslimit
-		'usersearch' => 'array',
-		'groupsearch' => 'array',
-		'migration' => 'boolean',
-		#'?' => '',			# FIXME: ipacertificatesubjectbase
-		#'?' => '',			# --groupobjectclasses
-		#'?' => '',			# --userobjectclasses
-		#'?' => '',			# --pwdexpnotify
-		#'?' => '',			# --ipaconfigstring
-		#'?' => '',			# --ipaselinuxusermaporder
-		#'?' => '',			# --ipaselinuxusermapdefault
-		#'?' => '',			# --pac-type
-		#'?' => '',			# FIXME: cn
-		#'?' => '',			# FIXME: objectclass
-		default => '',	# missing
-	}
+  $etype = $key ? {  # expected type
+    #'?' => '',			# FIXME: dn
+    #'?' => '',			# --maxusername
+    'homes' => 'string',
+    'shell' => 'string',
+    #'?' => '',			# --defaultgroup
+    'emaildomain' => 'string',
+    #'?' => '',			# --searchtimelimit
+    #'?' => '',			# --searchrecordslimit
+    'usersearch' => 'array',
+    'groupsearch' => 'array',
+    'migration' => 'boolean',
+    #'?' => '',			# FIXME: ipacertificatesubjectbase
+    #'?' => '',			# --groupobjectclasses
+    #'?' => '',			# --userobjectclasses
+    #'?' => '',			# --pwdexpnotify
+    #'?' => '',			# --ipaconfigstring
+    #'?' => '',			# --ipaselinuxusermaporder
+    #'?' => '',			# --ipaselinuxusermapdefault
+    #'?' => '',			# --pac-type
+    #'?' => '',			# FIXME: cn
+    #'?' => '',			# FIXME: objectclass
+    default => '',  # missing
+  }
 
-	$option = "${key}" ? {
-		#'?' => 'dn',				FIXME
-		#'?' => '--maxusername=',
-		'homes' => '--homedirectory=',
-		'shell' => '--defaultshell=',
-		#'?' => '--defaultgroup=',
-		'emaildomain' => '--emaildomain=',
-		#'?' => '--searchtimelimit=',
-		#'?' => '--searchrecordslimit=',
-		'usersearch' => '--usersearch=',
-		'groupsearch' => '--groupsearch=',
-		'migration' => '--enable-migration=',
-		#'?' => 'ipacertificatesubjectbase',	FIXME
-		#'?' => '--groupobjectclasses=',
-		#'?' => '--userobjectclasses=',
-		#'?' => '--pwdexpnotify=',
-		#'?' => '--ipaconfigstring=',
-		#'?' => '--ipaselinuxusermaporder=',
-		#'?' => '--ipaselinuxusermapdefault=',
-		#'?' => '--pac-type=',
-		#'?' => 'cn',				FIXME
-		#'?' => 'objectclass',			FIXME
-		default => '',	# missing
-	}
+  $option = $key ? {
+    #'?' => 'dn',				FIXME
+    #'?' => '--maxusername=',
+    'homes' => '--homedirectory=',
+    'shell' => '--defaultshell=',
+    #'?' => '--defaultgroup=',
+    'emaildomain' => '--emaildomain=',
+    #'?' => '--searchtimelimit=',
+    #'?' => '--searchrecordslimit=',
+    'usersearch' => '--usersearch=',
+    'groupsearch' => '--groupsearch=',
+    'migration' => '--enable-migration=',
+    #'?' => 'ipacertificatesubjectbase',	FIXME
+    #'?' => '--groupobjectclasses=',
+    #'?' => '--userobjectclasses=',
+    #'?' => '--pwdexpnotify=',
+    #'?' => '--ipaconfigstring=',
+    #'?' => '--ipaselinuxusermaporder=',
+    #'?' => '--ipaselinuxusermapdefault=',
+    #'?' => '--pac-type=',
+    #'?' => 'cn',				FIXME
+    #'?' => 'objectclass',			FIXME
+    default => '',  # missing
+  }
 
-	$rawkey = "${key}" ? {
-		#'?' => 'dn',
-		#'?' => 'ipamaxusernamelength',
-		'homes' => 'ipahomesrootdir',
-		'shell' => 'ipadefaultloginshell',
-		#'?' => 'ipadefaultprimarygroup',
-		'emaildomain' => 'ipadefaultemaildomain',
-		#'?' => 'ipasearchtimelimit',
-		#'?' => 'ipasearchrecordslimit',
-		'usersearch' => 'ipausersearchfields',
-		'groupsearch' => 'ipagroupsearchfields',
-		'migration' => 'ipamigrationenabled',
-		#'?' => 'ipacertificatesubjectbase',
-		#'?' => 'ipagroupobjectclasses',
-		#'?' => 'ipauserobjectclasses',
-		#'?' => 'ipapwdexpadvnotify',
-		#'?' => 'ipaconfigstring',
-		#'?' => 'ipaselinuxusermaporder',
-		#'?' => 'ipaselinuxusermapdefault',
-		#'?' => 'ipakrbauthzdata',
-		#'?' => 'cn',
-		#'?' => 'objectclass',
-		default => '',	# missing
-	}
+  $rawkey = $key ? {
+    #'?' => 'dn',
+    #'?' => 'ipamaxusernamelength',
+    'homes' => 'ipahomesrootdir',
+    'shell' => 'ipadefaultloginshell',
+    #'?' => 'ipadefaultprimarygroup',
+    'emaildomain' => 'ipadefaultemaildomain',
+    #'?' => 'ipasearchtimelimit',
+    #'?' => 'ipasearchrecordslimit',
+    'usersearch' => 'ipausersearchfields',
+    'groupsearch' => 'ipagroupsearchfields',
+    'migration' => 'ipamigrationenabled',
+    #'?' => 'ipacertificatesubjectbase',
+    #'?' => 'ipagroupobjectclasses',
+    #'?' => 'ipauserobjectclasses',
+    #'?' => 'ipapwdexpadvnotify',
+    #'?' => 'ipaconfigstring',
+    #'?' => 'ipaselinuxusermaporder',
+    #'?' => 'ipaselinuxusermapdefault',
+    #'?' => 'ipakrbauthzdata',
+    #'?' => 'cn',
+    #'?' => 'objectclass',
+    default => '',  # missing
+  }
 
-	if "${option}" == '' or "${etype}" == '' or "${rawkey}" == '' {
-		fail("Key '${key}' is invalid.")
-	}
+  if $option == '' or $etype == '' or $rawkey == '' {
+    fail("Key '${key}' is invalid.")
+  }
 
-	if type3x($value) != "${etype}" {
-		fail("Ipa::Server::Config[${key}] must be type: ${etype}.")
-	}
+  if type3x($value) != $etype {
+    fail("Ipa::Server::Config[${key}] must be type: ${etype}.")
+  }
 
-	# convert to correct type
-	if "${etype}" == 'string' {
-		$safe_value = shellquote($value)	# TODO: is this right ?
-		$jchar = ''	# pass through the paste binary
-	} elsif "${etype}" == 'array' {
-		$jchar = "${key}" ? {	# join char
-			'usersearch' => ',',
-			'groupsearch' => ',',
-			default => '',
-		}
-		$safe_value = inline_template('<%= value.join(jchar) %>')
-	} elsif "${etype}" == 'boolean' {
-		$safe_value = $value ? {
-			true => 'TRUE',
-			default => 'FALSE',
-		}
-		$jchar = ''	# pass through the paste binary
-	} else {
-		fail("Unknown type: ${etype}.")
-	}
+  # convert to correct type
+  if $etype == 'string' {
+    $safe_value = shellquote($value)  # TODO: is this right ?
+    $jchar = ''  # pass through the paste binary
+  } elsif $etype == 'array' {
+    $jchar = $key ? {  # join char
+      'usersearch' => ',',
+      'groupsearch' => ',',
+      default => '',
+    }
+    $safe_value = inline_template('<%= value.join(jchar) %>')
+  } elsif $etype == 'boolean' {
+    $safe_value = $value ? {
+      true => 'TRUE',
+      default => 'FALSE',
+    }
+    $jchar = ''  # pass through the paste binary
+  } else {
+    fail("Unknown type: ${etype}.")
+  }
 
         $cutlength = 2 + size($rawkey)
-	exec { "/usr/bin/ipa config-mod ${option}'${safe_value}'":
-		logoutput => on_failure,
-		onlyif => "${::ipa::common::ipa_installed}",
-		unless => "/usr/bin/test \"`/usr/bin/ipa config-show --raw --all | /usr/bin/tr -d ' ' | /bin/grep '^${rawkey}:' | /bin/cut -b ${cutlength}- | /usr/bin/paste -sd '${jchar}'`\" = '${safe_value}'",
-		require => [
-			Exec['ipa-install'],
-			Exec['ipa-server-kinit'],
-		],
-	}
+  exec { "/usr/bin/ipa config-mod ${option}'${safe_value}'":
+    logoutput => on_failure,
+    onlyif    => $::ipa::common::ipa_installed,
+    unless    => "/usr/bin/test \"`/usr/bin/ipa config-show --raw --all | /usr/bin/tr -d ' ' | /bin/grep '^${rawkey}:' | /bin/cut -b ${cutlength}- | /usr/bin/paste -sd '${jchar}'`\" = '${safe_value}'",
+    require   => [
+      Exec['ipa-install'],
+      Exec['ipa-server-kinit'],
+    ],
+  }
 }
 
 # vim: ts=8

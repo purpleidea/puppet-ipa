@@ -16,27 +16,27 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ipa::server::replica::firewall::base {
-	include ipa::server
+  include ipa::server
 
-	$zone = $::ipa::server::zone				# firewall zone
-	$shorewall = $::ipa::server::shorewall			# enable fw...?
+  $zone = $::ipa::server::zone        # firewall zone
+  $shorewall = $::ipa::server::shorewall      # enable fw...?
 
-	# open the firewall so that replicas can connect to what they will need
-	Ipa::Rulewrapper <<| tag == 'ipa-server-replica' and match == "${::fqdn}" |>> {
-	#Shorewall::Rule <<| tag == 'ipa-server-replica' and match == "${::fqdn}" |>> {
-		source => "${zone}",	# use our source zone
-		# TODO: this below before is basically untested for usefulness!
-		before => Exec['ipa-install'],		# open bi-directional fw first!
-		# TODO: the below require is basically untested for usefulness!
-		require => Exec['ipa-clean-peers'],	# let the peers clean up first!
-		ensure => $shorewall ? {
-			absent => absent,
-			'absent' => absent,
-			present => present,
-			'present' => present,
-			default => present,
-		},
-	}
+  # open the firewall so that replicas can connect to what they will need
+  Ipa::Rulewrapper <<| tag == 'ipa-server-replica' and match == $::fqdn |>> {
+  #Shorewall::Rule <<| tag == 'ipa-server-replica' and match == "${::fqdn}" |>> {
+    source => $zone,  # use our source zone
+    # TODO: this below before is basically untested for usefulness!
+    before => Exec['ipa-install'],    # open bi-directional fw first!
+    # TODO: the below require is basically untested for usefulness!
+    require => Exec['ipa-clean-peers'],  # let the peers clean up first!
+    ensure => $shorewall ? {
+      absent => absent,
+      'absent' => absent,
+      present => present,
+      'present' => present,
+      default => present,
+    },
+  }
 }
 
 # vim: ts=8

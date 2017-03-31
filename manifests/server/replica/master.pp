@@ -18,26 +18,26 @@
 class ipa::server::replica::master(
 ) {
 
-	include ipa::server::replica::master::base
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::server::replica::master::base
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	# fact from data in: ${vardir}/ipa_server_replica_master
-	$valid_master = "${::ipa_server_replica_master}"
+  # fact from data in: ${vardir}/ipa_server_replica_master
+  $valid_master = $::ipa_server_replica_master
 
-	@@file { "${vardir}/replica/master/master_${::fqdn}":
-		content => "${valid_master}\n",
-		tag => 'ipa-server-replica-master',
-		owner => root,
-		group => nobody,
-		mode => '600',
-		ensure => present,
-	}
+  @@file { "${vardir}/replica/master/master_${::fqdn}":
+    content => "${valid_master}\n",
+    tag     => 'ipa-server-replica-master',
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',
+    ensure  => present,
+  }
 
-	# collect to make facts
-	File <<| tag == 'ipa-server-replica-master' |>> {
-	}
+  # collect to make facts
+  File <<| tag == 'ipa-server-replica-master' |>> {
+  }
 }
 
 # vim: ts=8

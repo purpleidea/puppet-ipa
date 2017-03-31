@@ -19,8 +19,8 @@ class ipa::common(
 
 ) {
 
-	# TODO: patch freeipa to provide this in a stable way...
-	$ipa_installed = "/usr/bin/python -c 'import sys,ipaserver.install.installutils; sys.exit(0 if ipaserver.install.installutils.is_ipa_configured() else 1)'"
+  # TODO: patch freeipa to provide this in a stable way...
+  $ipa_installed = "/usr/bin/python -c 'import sys,ipaserver.install.installutils; sys.exit(0 if ipaserver.install.installutils.is_ipa_configured() else 1)'"
 
 }
 

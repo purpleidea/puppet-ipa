@@ -17,31 +17,31 @@
 
 # NOTE: this wraps shorewall::rule so that we can add on additional fake 'tags'
 define ipa::rulewrapper(
-	$action = '',
-	$source = '',
-	$source_ips = [],
-	$dest = '',
-	$dest_ips = [],
-	$proto = '',
-	$port = [],
-	$sport = [],
-	$original = [],
-	$comment = '',
-	$ensure = present,
-	$match = ''	# additional tag parameter
+  $action = '',
+  $source = '',
+  $source_ips = [],
+  $dest = '',
+  $dest_ips = [],
+  $proto = '',
+  $port = [],
+  $sport = [],
+  $original = [],
+  $comment = '',
+  $ensure = present,
+  $match = ''  # additional tag parameter
 ) {
-	shorewall::rule { "${name}":
-		action => "${action}",
-		source => "${source}",
-		source_ips => $source_ips,
-		dest => "${dest}",
-		dest_ips => $dest_ips,
-		proto => "${proto}",
-		port => $port,
-		sport => $sport,
-		comment => "${comment}",
-		ensure => $ensure,
-	}
+  shorewall::rule { $name:
+    action     => $action,
+    source     => $source,
+    source_ips => $source_ips,
+    dest       => $dest,
+    dest_ips   => $dest_ips,
+    proto      => $proto,
+    port       => $port,
+    sport      => $sport,
+    comment    => $comment,
+    ensure     => $ensure,
+  }
 }
 
 # vim: ts=8
