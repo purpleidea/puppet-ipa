@@ -19,56 +19,56 @@
 define ipa::server::replica::prepare(
 ) {
 
-	include ipa::server::replica::prepare::base
-	include ipa::common
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::server::replica::prepare::base
+  include ipa::common
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	$valid_fqdn = "${name}"	# TODO: validate
+  $valid_fqdn = $name  # TODO: validate
 
-	$filename = "replica-info-${valid_fqdn}.gpg"
-	$filedest = "replica-info-${::fqdn}.gpg"	# name it with our fqdn
-	$prepared = "/var/lib/ipa/${filename}"
-	$valid_file = "${vardir}/replica/prepare/${filename}"
+  $filename = "replica-info-${valid_fqdn}.gpg"
+  $filedest = "replica-info-${::fqdn}.gpg"  # name it with our fqdn
+  $prepared = "/var/lib/ipa/${filename}"
+  $valid_file = "${vardir}/replica/prepare/${filename}"
 
-	# TODO: ipa-replica-prepare should allow you to pick output path/file
-	exec { "/usr/sbin/ipa-replica-prepare --password=`/bin/cat '${vardir}/dm.password'` ${valid_fqdn} && /bin/mv -f '${prepared}' '${valid_file}'":
-		logoutput => on_failure,
-		creates => "${valid_file}",
-		onlyif => "${::ipa::common::ipa_installed}",
-		# ipa-server-install or ipa-replica-install must execute first!
-		require => Exec['ipa-install'],	# same alias for either install
-		alias => "ipa-replica-prepare-${name}",
-	}
+  # TODO: ipa-replica-prepare should allow you to pick output path/file
+  exec { "/usr/sbin/ipa-replica-prepare --password=`/bin/cat '${vardir}/dm.password'` ${valid_fqdn} && /bin/mv -f '${prepared}' '${valid_file}'":
+    logoutput => on_failure,
+    creates   => $valid_file,
+    onlyif    => $::ipa::common::ipa_installed,
+    # ipa-server-install or ipa-replica-install must execute first!
+    require   => Exec['ipa-install'],  # same alias for either install
+    alias     => "ipa-replica-prepare-${name}",
+  }
 
-	# tag this file so it doesn't get purged
-	file { "${valid_file}":
-		owner => root,
-		group => nobody,
-		mode => '600',			# u=rw
-		backup => false,		# don't backup to filebucket
-		ensure => present,
-		require => Exec["ipa-replica-prepare-${name}"],
-	}
+  # tag this file so it doesn't get purged
+  file { $valid_file:
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',      # u=rw
+    backup  => false,    # don't backup to filebucket
+    ensure  => present,
+    require => Exec["ipa-replica-prepare-${name}"],
+  }
 
-	# add this manually so we don't have to wait for the exported resources
-	ssh::recv { "${valid_fqdn}":
+  # add this manually so we don't have to wait for the exported resources
+  ssh::recv { $valid_fqdn:
 
-	}
+  }
 
-	# use a pull, so the remote path is decided over *there*
-	# export (@@) the pull, so that it knows the file is already here...
-	@@ssh::file::pull { "ipa-replica-prepare-${::fqdn}-${name}":
-		user => 'root',				# src user
-		host => "${::fqdn}",			# src host
-		file => "${valid_file}",		# src file
-		path => "${vardir}/replica/install/",	# dest path; overridden
-		dest => "${filedest}",			# dest file
-		verify => false,			# rely on mtime
-		pair => false,			# do it now so it happens fast!
-		tag => 'ipa-replica-prepare',	# TODO: can be used as grouping
-	}
+  # use a pull, so the remote path is decided over *there*
+  # export (@@) the pull, so that it knows the file is already here...
+  @@ssh::file::pull { "ipa-replica-prepare-${::fqdn}-${name}":
+    user   => 'root',        # src user
+    host   => $::fqdn,      # src host
+    file   => $valid_file,    # src file
+    path   => "${vardir}/replica/install/",  # dest path; overridden
+    dest   => $filedest,      # dest file
+    verify => false,      # rely on mtime
+    pair   => false,      # do it now so it happens fast!
+    tag    => 'ipa-replica-prepare',  # TODO: can be used as grouping
+  }
 }
 
 # vim: ts=8

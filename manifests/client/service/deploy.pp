@@ -17,30 +17,30 @@
 
 # NOTE: use this to deploy the exported resource @@ipa::client::service
 class ipa::client::service::deploy(
-	$server = '',
-	$nametag = '',				# pick a tag to collect...
-	$debug = false
+  $server = '',
+  $nametag = '',        # pick a tag to collect...
+  $debug = false
 ) {
 
-	# NOTE: the resource collects by fqdn; one good reason to use the fqdn!
-	# sure you can override this by choosing your own $name value, but why?
-	$valid_tag = "${nametag}" ? {
-		'' => "${::fqdn}",	# if we're smart, this is what is used!
-		default => "${nametag}",
-	}
+  # NOTE: the resource collects by fqdn; one good reason to use the fqdn!
+  # sure you can override this by choosing your own $name value, but why?
+  $valid_tag = $nametag ? {
+    '' => $::fqdn,  # if we're smart, this is what is used!
+    default => $nametag,
+  }
 
-	# the host field is also the argument passed to the exported resource,
-	# and it is the $valid_host variable that came from the server service
-	if "${server}" == '' {
-		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
-			debug => $debug,
-		}
-	} else {
-		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
-			server => "${server}",	# override...
-			debug => $debug,
-		}
-	}
+  # the host field is also the argument passed to the exported resource,
+  # and it is the $valid_host variable that came from the server service
+  if $server == '' {
+    Ipa::Client::Service <<| host == $valid_tag |>> {
+      debug => $debug,
+    }
+  } else {
+    Ipa::Client::Service <<| host == $valid_tag |>> {
+      server => $server,  # override...
+      debug => $debug,
+    }
+  }
 }
 
 # vim: ts=8

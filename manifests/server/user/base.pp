@@ -16,83 +16,89 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ipa::server::user::base {
-	include ipa::server
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::server
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	# by default, the following users get installed with freeipa:
-	# admin
-	# since we don't want to purge them, we need to exclude them...
-	$user_always_ignore = ['admin']
-	$user_excludes = $ipa::server::user_excludes
-	$valid_user_excludes = type3x($user_excludes) ? {
-		'string' => [$user_excludes],
-		'array' => $user_excludes,
-		'boolean' => $user_excludes ? {
-			# TODO: there's probably a better user match expression
-			# this is an expression to prevent all user deletion...
-			#true => ['^[a-zA-Z0-9]*$'],
-			true => ['^[[:alpha:]]{1}[[:alnum:]]*$'],
-			default => false,
-		},
-		default => false,	# trigger error...
-	}
+  # by default, the following users get installed with freeipa:
+  # admin
+  # since we don't want to purge them, we need to exclude them...
+  $user_always_ignore = ['admin']
+  $user_excludes = $ipa::server::user_excludes
+  $valid_user_excludes = type3x($user_excludes) ? {
+    'string' => [$user_excludes],
+    'array' => $user_excludes,
+    'boolean' => $user_excludes ? {
+      # TODO: there's probably a better user match expression
+      # this is an expression to prevent all user deletion...
+      #true => ['^[a-zA-Z0-9]*$'],
+      true => ['^[[:alpha:]]{1}[[:alnum:]]*$'],
+      default => false,
+    },
+    default => false,  # trigger error...
+  }
 
-	if type3x($valid_user_excludes) != 'array' {
-		fail('The $user_excludes must be an array.')
-	}
+  if type3x($valid_user_excludes) != 'array' {
+    fail('The $user_excludes must be an array.')
+  }
 
-	# directory of system tags which should exist (as managed by puppet)
-	file { "${vardir}/users/":
-		ensure => directory,		# make sure this is a directory
-		recurse => true,		# recursively manage directory
-		purge => true,			# purge all unmanaged files
-		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => '600', backup => false,
-		notify => Exec['ipa-clean-users'],
-		require => File["${vardir}/"],
-	}
+  # directory of system tags which should exist (as managed by puppet)
+  file { "${vardir}/users/":
+    ensure  => directory,    # make sure this is a directory
+    recurse => true,    # recursively manage directory
+    purge   => true,      # purge all unmanaged files
+    force   => true,      # also purge subdirs and links
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',
+    backup  => false,
+    notify  => Exec['ipa-clean-users'],
+    require => File["${vardir}/"],
+  }
 
-	# these are template variables for the clean.sh.erb script
-	$id_dir = 'users'
-	$ls_cmd = '/usr/bin/ipa user-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^uid:" | /bin/cut -b 5-'	# show ipa users
-	$rm_cmd = '/usr/bin/ipa user-del '	# delete ipa users
-	$fs_chr = ' '
-	$suffix = '.user'
-	$regexp = $valid_user_excludes
-	$ignore = $user_always_ignore
+  # these are template variables for the clean.sh.erb script
+  $id_dir = 'users'
+  $ls_cmd = '/usr/bin/ipa user-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^uid:" | /bin/cut -b 5-'  # show ipa users
+  $rm_cmd = '/usr/bin/ipa user-del '  # delete ipa users
+  $fs_chr = ' '
+  $suffix = '.user'
+  $regexp = $valid_user_excludes
+  $ignore = $user_always_ignore
 
-	# build the clean script
-	file { "${vardir}/clean-users.sh":
-		content => template('ipa/clean.sh.erb'),
-		owner => root,
-		group => nobody,
-		mode => '700',			# u=rwx
-		backup => false,		# don't backup to filebucket
-		ensure => present,
-		require => File["${vardir}/"],
-	}
+  # build the clean script
+  file { "${vardir}/clean-users.sh":
+    content => template('ipa/clean.sh.erb'),
+    owner   => root,
+    group   => nobody,
+    mode    => '0700',      # u=rwx
+    backup  => false,    # don't backup to filebucket
+    ensure  => present,
+    require => File["${vardir}/"],
+  }
 
-	# run the cleanup
-	exec { "${vardir}/clean-users.sh":
-		logoutput => on_failure,
-		refreshonly => true,
-		require => [
-			Exec['ipa-server-kinit'],
-			File["${vardir}/clean-users.sh"],
-		],
-		alias => 'ipa-clean-users',
-	}
+  # run the cleanup
+  exec { "${vardir}/clean-users.sh":
+    logoutput   => on_failure,
+    refreshonly => true,
+    require     => [
+      Exec['ipa-server-kinit'],
+      File["${vardir}/clean-users.sh"],
+    ],
+    alias       => 'ipa-clean-users',
+  }
 
-	file { "${vardir}/users/passwords/":	# for storing random passwords
-		ensure => directory,		# make sure this is a directory
-		recurse => true,		# recursively manage directory
-		purge => true,			# purge all unmanaged files
-		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => '600', backup => false,
-		require => File["${vardir}/users/"],
-	}
+  file { "${vardir}/users/passwords/":  # for storing random passwords
+    ensure  => directory,    # make sure this is a directory
+    recurse => true,    # recursively manage directory
+    purge   => true,      # purge all unmanaged files
+    force   => true,      # also purge subdirs and links
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',
+    backup  => false,
+    require => File["${vardir}/users/"],
+  }
 }
 
 # vim: ts=8

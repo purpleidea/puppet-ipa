@@ -17,26 +17,26 @@
 
 # NOTE: this should only be used by a freeipa client and as an exported resource
 define ipa::server::host::pwtag() {
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	# the existence of this file means that an ipa client has exported it,
-	# and that the ipa server collected it and it means that a provisioned
-	# ipa client host is notifying the server that a new one time password
-	# does not need to be generated at this time. to reprovision the host,
-	# you must erase the exported resource that is sending this file here,
-	# or rather, in doing so, the ipa server will generate a new password!
-	file { "${vardir}/hosts/passwords/${name}.pwtag":
-		content => "# This is a password tag for: ${name}\n",
-		owner => root,
-		group => nobody,
-		mode => '600',	# u=rw,go=
-		backup => false,
-		before => Exec["ipa-host-verify-password-exists-${name}"],
-		require => File["${vardir}/hosts/passwords/"],
-		ensure => present,
-	}
+  # the existence of this file means that an ipa client has exported it,
+  # and that the ipa server collected it and it means that a provisioned
+  # ipa client host is notifying the server that a new one time password
+  # does not need to be generated at this time. to reprovision the host,
+  # you must erase the exported resource that is sending this file here,
+  # or rather, in doing so, the ipa server will generate a new password!
+  file { "${vardir}/hosts/passwords/${name}.pwtag":
+    content => "# This is a password tag for: ${name}\n",
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',  # u=rw,go=
+    backup  => false,
+    before  => Exec["ipa-host-verify-password-exists-${name}"],
+    require => File["${vardir}/hosts/passwords/"],
+    ensure  => present,
+  }
 }
 
 # vim: ts=8

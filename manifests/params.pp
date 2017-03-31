@@ -16,57 +16,57 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ipa::params(
-	# packages...
-	$package_ipa_server = 'ipa-server',
-	$package_ipa_client = 'ipa-client',
-	$package_ipa_admintools = 'ipa-admintools',
-	$package_pwgen = 'pwgen',
-	$package_bind = ['bind', 'bind-dyndb-ldap'],
-	$package_python_argparse = 'python-argparse',
+  # packages...
+  $package_ipa_server = 'ipa-server',
+  $package_ipa_client = 'ipa-client',
+  $package_ipa_admintools = 'ipa-admintools',
+  $package_pwgen = 'pwgen',
+  $package_bind = ['bind', 'bind-dyndb-ldap'],
+  $package_python_argparse = 'python-argparse',
 
-	# programs...
-	$program_ipa_server_install = '/usr/sbin/ipa-server-install',
-	$program_ipa = '/usr/bin/ipa',
+  # programs...
+  $program_ipa_server_install = '/usr/sbin/ipa-server-install',
+  $program_ipa = '/usr/bin/ipa',
 
-	# services...
-	#$service_ = '',	# TODO
+  # services...
+  #$service_ = '',	# TODO
 
-	# external modules...
-	$include_puppet_facter = false,	# TODO: currently unused, so set to false
+  # external modules...
+  $include_puppet_facter = false,  # TODO: currently unused, so set to false
 
-	# misc...
-	#$misc_ = '',	# TODO
+  # misc...
+  #$misc_ = '',	# TODO
 
-	# comment...
-	$comment = ''
+  # comment...
+  $comment = ''
 ) {
-	if "${comment}" == '' {
-		warning('Unable to load yaml data/ directory!')
-	}
+  if $comment == '' {
+    warning('Unable to load yaml data/ directory!')
+  }
 
-	$valid_include_puppet_facter = $include_puppet_facter ? {
-		true => true,
-		false => false,
-		'true' => true,
-		'false' => false,
-		default => true,
-	}
+  $valid_include_puppet_facter = $include_puppet_facter ? {
+    true => true,
+    false => false,
+    true => true,
+    false => false,
+    default => true,
+  }
 
-	if $valid_include_puppet_facter {
-		include puppet::facter
-		$factbase = "${::puppet::facter::base}"
-		$hash = {
-			'ipa_program_ipa' => $program_ipa,
-		}
-		# create a custom external fact!
-		file { "${factbase}ipa_program.yaml":
-			content => inline_template('<%= @hash.to_yaml %>'),
-			owner => root,
-			group => root,
-			mode => '644',		# u=rw,go=r
-			ensure => present,
-		}
-	}
+  if $valid_include_puppet_facter {
+    include puppet::facter
+    $factbase = $::puppet::facter::base
+    $hash = {
+      'ipa_program_ipa' => $program_ipa,
+    }
+    # create a custom external fact!
+    file { "${factbase}ipa_program.yaml":
+      content => inline_template('<%= @hash.to_yaml %>'),
+      owner   => root,
+      group   => root,
+      mode    => '0644',    # u=rw,go=r
+      ensure  => present,
+    }
+  }
 }
 
 # vim: ts=8

@@ -17,19 +17,22 @@
 
 class ipa::server::replica::peering::base {
 
-	include ipa::server::replica::base
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::server::replica::base
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	file { "${vardir}/replica/peering/":
-		ensure => directory,		# make sure this is a directory
-		recurse => true,		# recursively manage directory
-		purge => true,			# purge all unmanaged files
-		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => '600', backup => false,
-		require => File["${vardir}/replica/"],
-	}
+  file { "${vardir}/replica/peering/":
+    ensure  => directory,    # make sure this is a directory
+    recurse => true,    # recursively manage directory
+    purge   => true,      # purge all unmanaged files
+    force   => true,      # also purge subdirs and links
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',
+    backup  => false,
+    require => File["${vardir}/replica/"],
+  }
 }
 
 # vim: ts=8

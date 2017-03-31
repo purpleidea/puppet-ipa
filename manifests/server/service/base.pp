@@ -16,83 +16,86 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class ipa::server::service::base {
-	include ipa::server
-	include ipa::vardir
-	#$vardir = $::ipa::vardir::module_vardir	# with trailing slash
-	$vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
+  include ipa::server
+  include ipa::vardir
+  #$vardir = $::ipa::vardir::module_vardir	# with trailing slash
+  $vardir = regsubst($::ipa::vardir::module_vardir, '\/$', '')
 
-	# by default, the following services get installed with freeipa:
-	# DNS/ipa.example.com@EXAMPLE.COM
-	# dogtagldap/ipa.example.com@EXAMPLE.COM
-	# HTTP/ipa.example.com@EXAMPLE.COM
-	# ldap/ipa.example.com@EXAMPLE.COM
-	# since we don't want to purge them, we need to exclude them...
-	$prefix = ['DNS', 'dogtagldap', 'HTTP', 'ldap']
-	$valid_hostname = $ipa::server::valid_hostname
-	$valid_domain = $ipa::server::valid_domain
-	$valid_realm = $ipa::server::valid_realm
-	$append = "/${valid_hostname}.${valid_domain}@${valid_realm}"
-	$service_always_ignore = suffix($prefix, $append)
+  # by default, the following services get installed with freeipa:
+  # DNS/ipa.example.com@EXAMPLE.COM
+  # dogtagldap/ipa.example.com@EXAMPLE.COM
+  # HTTP/ipa.example.com@EXAMPLE.COM
+  # ldap/ipa.example.com@EXAMPLE.COM
+  # since we don't want to purge them, we need to exclude them...
+  $prefix = ['DNS', 'dogtagldap', 'HTTP', 'ldap']
+  $valid_hostname = $ipa::server::valid_hostname
+  $valid_domain = $ipa::server::valid_domain
+  $valid_realm = $ipa::server::valid_realm
+  $append = "/${valid_hostname}.${valid_domain}@${valid_realm}"
+  $service_always_ignore = suffix($prefix, $append)
 
-	$service_excludes = $ipa::server::service_excludes
-	$valid_service_excludes = type3x($service_excludes) ? {
-		'string' => [$service_excludes],
-		'array' => $service_excludes,
-		'boolean' => $service_excludes ? {
-			# TODO: there's probably a better fqdn match expression
-			# this is an expression to prevent all fqdn deletion...
-			#true => ['^[a-zA-Z0-9\.\-]*$'],
-			true => ['^[[:alpha:]]{1}[[:alnum:]-.]*$'],
-			default => false,
-		},
-		default => false,	# trigger error...
-	}
+  $service_excludes = $ipa::server::service_excludes
+  $valid_service_excludes = type3x($service_excludes) ? {
+    'string' => [$service_excludes],
+    'array' => $service_excludes,
+    'boolean' => $service_excludes ? {
+      # TODO: there's probably a better fqdn match expression
+      # this is an expression to prevent all fqdn deletion...
+      #true => ['^[a-zA-Z0-9\.\-]*$'],
+      true => ['^[[:alpha:]]{1}[[:alnum:]-.]*$'],
+      default => false,
+    },
+    default => false,  # trigger error...
+  }
 
-	if type3x($valid_service_excludes) != 'array' {
-		fail('The $service_excludes must be an array.')
-	}
+  if type3x($valid_service_excludes) != 'array' {
+    fail('The $service_excludes must be an array.')
+  }
 
-	# directory of system tags which should exist (as managed by puppet)
-	file { "${vardir}/services/":
-		ensure => directory,		# make sure this is a directory
-		recurse => true,		# recursively manage directory
-		purge => true,			# purge all unmanaged files
-		force => true,			# also purge subdirs and links
-		owner => root, group => nobody, mode => '600', backup => false,
-		notify => Exec['ipa-clean-services'],
-		require => File["${vardir}/"],
-	}
+  # directory of system tags which should exist (as managed by puppet)
+  file { "${vardir}/services/":
+    ensure  => directory,    # make sure this is a directory
+    recurse => true,    # recursively manage directory
+    purge   => true,      # purge all unmanaged files
+    force   => true,      # also purge subdirs and links
+    owner   => root,
+    group   => nobody,
+    mode    => '0600',
+    backup  => false,
+    notify  => Exec['ipa-clean-services'],
+    require => File["${vardir}/"],
+  }
 
-	# these are template variables for the clean.sh.erb script
-	$id_dir = 'services'
-	$ls_cmd = '/usr/bin/ipa service-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^krbprincipalname:" | /bin/cut -b 18-'	# show ipa services
-	$rm_cmd = '/usr/bin/ipa service-del '	# delete ipa services
-	$fs_chr = ' '
-	$suffix = '.service'
-	$regexp = $valid_service_excludes
-	$ignore = $service_always_ignore
+  # these are template variables for the clean.sh.erb script
+  $id_dir = 'services'
+  $ls_cmd = '/usr/bin/ipa service-find --pkey-only --raw | /usr/bin/tr -d " " | /bin/grep "^krbprincipalname:" | /bin/cut -b 18-'  # show ipa services
+  $rm_cmd = '/usr/bin/ipa service-del '  # delete ipa services
+  $fs_chr = ' '
+  $suffix = '.service'
+  $regexp = $valid_service_excludes
+  $ignore = $service_always_ignore
 
-	# build the clean script
-	file { "${vardir}/clean-services.sh":
-		content => template('ipa/clean.sh.erb'),
-		owner => root,
-		group => nobody,
-		mode => '700',			# u=rwx
-		backup => false,		# don't backup to filebucket
-		ensure => present,
-		require => File["${vardir}/"],
-	}
+  # build the clean script
+  file { "${vardir}/clean-services.sh":
+    content => template('ipa/clean.sh.erb'),
+    owner   => root,
+    group   => nobody,
+    mode    => '0700',      # u=rwx
+    backup  => false,    # don't backup to filebucket
+    ensure  => present,
+    require => File["${vardir}/"],
+  }
 
-	# run the cleanup
-	exec { "${vardir}/clean-services.sh":
-		logoutput => on_failure,
-		refreshonly => true,
-		require => [
-			Exec['ipa-server-kinit'],
-			File["${vardir}/clean-services.sh"],
-		],
-		alias => 'ipa-clean-services',
-	}
+  # run the cleanup
+  exec { "${vardir}/clean-services.sh":
+    logoutput   => on_failure,
+    refreshonly => true,
+    require     => [
+      Exec['ipa-server-kinit'],
+      File["${vardir}/clean-services.sh"],
+    ],
+    alias       => 'ipa-clean-services',
+  }
 }
 
 # vim: ts=8

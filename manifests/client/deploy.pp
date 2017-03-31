@@ -18,49 +18,49 @@
 # NOTE: use this to deploy all the @@ipa::client::* exported resources on clients
 # the $nametag variable should match the $name value of the server/client::host
 class ipa::client::deploy(
-	$hostname = $::hostname,
-	$domain = $::domain,
-	$server = '',
-	$nametag = '',				# pick a tag to collect...
-	$debug = false
+  $hostname = $::hostname,
+  $domain = $::domain,
+  $server = '',
+  $nametag = '',        # pick a tag to collect...
+  $debug = false
 ) {
-	$valid_domain = downcase($domain)	# TODO: validate ?
+  $valid_domain = downcase($domain)  # TODO: validate ?
 
-	# if $hostname has dots, then assume it's a fqdn, if not, we add $domain
-	$valid_fqdn = delete("${hostname}", '.') ? {
-		"${hostname}" => "${hostname}.${valid_domain}",	# had no dots present
-		default => "${hostname}",			# had dots present...
-	}
+  # if $hostname has dots, then assume it's a fqdn, if not, we add $domain
+  $valid_fqdn = delete($hostname, '.') ? {
+    "${hostname}" => "${hostname}.${valid_domain}",  # had no dots present
+    default => $hostname,      # had dots present...
+  }
 
-	# NOTE: the resource collects by fqdn; one good reason to use the fqdn!
-	# sure you can override this by choosing your own $name value, but why?
-	$valid_tag = "${nametag}" ? {
-		'' => "${valid_fqdn}",
-		default => "${nametag}",
-	}
+  # NOTE: the resource collects by fqdn; one good reason to use the fqdn!
+  # sure you can override this by choosing your own $name value, but why?
+  $valid_tag = $nametag ? {
+    '' => $valid_fqdn,
+    default => $nametag,
+  }
 
-	# TODO: if i had more than one arg to decide to override, then i would
-	# have to build a big tree of nested choices... this is one more place
-	# where puppet shows it's really not a mature language yet. oh well...
-	# the host field is also the argument passed to the exported resource,
-	# and it is the $valid_host variable that came from the server service
-	if "${server}" == '' {
-		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
-			debug => $debug,
-		}
-		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
-			debug => $debug,
-		}
-	} else {
-		Ipa::Client::Host <<| tag == "${valid_tag}" |>> {
-			server => "${server}",	# override...
-			debug => $debug,
-		}
-		Ipa::Client::Service <<| host == "${valid_tag}" |>> {
-			server => "${server}",	# override...
-			debug => $debug,
-		}
-	}
+  # TODO: if i had more than one arg to decide to override, then i would
+  # have to build a big tree of nested choices... this is one more place
+  # where puppet shows it's really not a mature language yet. oh well...
+  # the host field is also the argument passed to the exported resource,
+  # and it is the $valid_host variable that came from the server service
+  if $server == '' {
+    Ipa::Client::Host <<| tag == $valid_tag |>> {
+      debug => $debug,
+    }
+    Ipa::Client::Service <<| host == $valid_tag |>> {
+      debug => $debug,
+    }
+  } else {
+    Ipa::Client::Host <<| tag == $valid_tag |>> {
+      server => $server,  # override...
+      debug => $debug,
+    }
+    Ipa::Client::Service <<| host == $valid_tag |>> {
+      server => $server,  # override...
+      debug => $debug,
+    }
+  }
 }
 
 # vim: ts=8
