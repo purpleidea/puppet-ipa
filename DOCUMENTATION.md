@@ -1,4 +1,4 @@
-#Puppet-IPA
+# Puppet-IPA
 
 <!--
 FreeIPA templating module by James
@@ -19,16 +19,16 @@ You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
-##A FreeIPA Puppet module by [James](https://ttboj.wordpress.com/)
-####Available from:
-####[https://github.com/purpleidea/puppet-ipa/](https://github.com/purpleidea/puppet-ipa/)
+## A FreeIPA Puppet module by [James](https://ttboj.wordpress.com/)
+#### Available from:
+#### [https://github.com/purpleidea/puppet-ipa/](https://github.com/purpleidea/puppet-ipa/)
 
-####Also available from:
-####[https://gitorious.org/purpleidea/puppet-ipa/](https://gitorious.org/purpleidea/puppet-ipa/)
+#### Also available from:
+#### [https://gitorious.org/purpleidea/puppet-ipa/](https://gitorious.org/purpleidea/puppet-ipa/)
 
-####This documentation is available in: [Markdown](https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) or [PDF](https://pdfdoc-purpleidea.rhcloud.com/pdf/https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) format.
+#### This documentation is available in: [Markdown](https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) or [PDF](https://pdfdoc-purpleidea.rhcloud.com/pdf/https://github.com/purpleidea/puppet-ipa/blob/master/DOCUMENTATION.md) format.
 
-####Table of Contents
+#### Table of Contents
 
 1. [Overview](#overview)
 2. [Module description - What the module does](#module-description)
@@ -51,19 +51,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 8. [Development - Background on module development and reporting bugs](#development)
 9. [Author - Author and contact information](#author)
 
-##Overview
+## Overview
 
 The Puppet-IPA module installs, configures, and manages a FreeIPA server,
 replicas, and clients.
 
-##Module Description
+## Module Description
 
 This Puppet-IPA module handles installation, configuration, and management
 of FreeIPA across all of the replicas and clients in your infrastructure.
 
-##Setup
+## Setup
 
-###What can Puppet-IPA manage?
+### What can Puppet-IPA manage?
 
 Puppet-IPA is designed to be able to manage as much or as little of your
 FreeIPA infrastructure as you wish. All features are optional. If there is a
@@ -85,7 +85,7 @@ feature ;) At the moment it can manage:
 * FreeIPA client installation (ipa-client-install, ipa-getkeytab)
 * And much more...
 
-###Basic setup
+### Basic setup
 
 For a single host FreeIPA server, setup is quite simple and straight-forward.
 
@@ -102,7 +102,7 @@ node ipa1 {
 Please be careful to keep the the _dm_ and _admin_ passwords secret. For a
 better way to do this, please have a look at the [advanced setup](#advanced-setup).
 
-###Advanced setup
+### Advanced setup
 
 Storing secrets in puppet is generally a bad idea. Because FreeIPA is usually
 the security cornerstone of your infrastructure, care was taken to ensure that
@@ -138,7 +138,7 @@ types, please read:
 For information on additional advanced options, please see the
 [reference](#reference) section below for the specifics.
 
-###Multi-master setup
+### Multi-master setup
 
 Puppet-IPA can be used to setup a cluster of FreeIPA servers. Each server in
 the cluster becomes a FreeIPA replica. There are some additional requirements
@@ -180,7 +180,7 @@ algorithmically, so that you can worry about other issues. Other algorithms can
 be written and included, and contributions are encouraged. You can also specify
 the topology manually if you want to be extremely hands on with your layout.
 
-###Type setup
+### Type setup
 
 Naturally you'll probably want to define FreeIPA types on your server. The most
 common ones are _host_, _service_, and _user_. These should be defined on all
@@ -225,7 +225,7 @@ For more information on FreeIPA type management, and the hybrid management
 feature that Puppet-IPA supports, please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-###Client setup
+### Client setup
 
 Getting a client host to enroll and work magically with the FreeIPA server is
 particularly easy. Simply include the IPA client _deploy_ class:
@@ -263,14 +263,14 @@ class { '::ipa::client::deploy':
 All of this happens automatically through the magic of puppet and exported
 resources. See the [examples](#examples) for more ideas.
 
-##Usage and frequently asked questions
+## Usage and frequently asked questions
 
 All management should be done by manipulating the arguments on the appropriate
 Puppet-IPA classes and types. Hybrid management is also supported for certain
 aspects of FreeIPA management. This is a stellar feature of Puppet-IPA. Please
 read: [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-###Do I need to use a virtual IP?
+### Do I need to use a virtual IP?
 
 Using a virtual IP (VIP) is strongly recommended as a distributed lock manager
 (DLM) for certain operations. For an article explaning the mechanism (but for a
@@ -283,7 +283,7 @@ you can use an unused private RFC1918 IP address as the DLM VIP. Remember that
 a layer 3 IP can co-exist on the same layer 2 network with the layer 3 network
 that is used by your cluster.
 
-###Is it possible to have Puppet-IPA complete in a single run?
+### Is it possible to have Puppet-IPA complete in a single run?
 
 No. This is a limitation of Puppet, and is related to how FreeIPA operates. It
 is possible for a single FreeIPA server, but for many multi-host scenarios,
@@ -291,7 +291,7 @@ including the multi-master FreeIPA case, you will require more than one run.
 
 For example, 
 
-###Can you integrate this with vagrant?
+### Can you integrate this with vagrant?
 
 Yes, see the
 [vagrant/](https://github.com/purpleidea/puppet-ipa/tree/master/vagrant)
@@ -300,7 +300,7 @@ no desire to use VirtualBox for fun. I have written many articles about this on
 my [technical blog](https://ttboj.wordpress.com/?s=vagrant). In particular, I
 would recommend: [Vagrant on Fedora with libvirt (reprise)](https://ttboj.wordpress.com/2014/05/13/vagrant-on-fedora-with-libvirt-reprise/).
 
-###Puppet runs fail with "Connection refused - connect(2)" errors.
+### Puppet runs fail with "Connection refused - connect(2)" errors.
 
 You may see a "_Connection refused - connect(2)_" message when running puppet.
 This typically happens if your puppet vm guest is overloaded. When running high
@@ -309,7 +309,7 @@ this is quite common. Another common causes of this is if your domain type is
 set to _qemu_ instead of the accelerated _kvm_. Since the _qemu_ domain type is
 much slower, puppet timeouts and failures are common when it doesn't respond.
 
-###Will this work on my favourite OS? (eg: GNU/Linux F00bar OS v12 ?)
+### Will this work on my favourite OS? (eg: GNU/Linux F00bar OS v12 ?)
 If it's a GNU/Linux based OS, can run FreeIPA, and Puppet, then it will
 probably work. Typically, you might need to add a yaml data file to the _data/_
 folder so that Puppet-IPA knows where certain operating system specific
@@ -317,26 +317,26 @@ things are found. The multi-distro support has been designed to make it
 particularly easy to add support for additional platforms. If your platform
 doesn't work, please submit a yaml data file with the platform specific values.
 
-###Awesome work, but it's missing support for a feature and/or platform!
+### Awesome work, but it's missing support for a feature and/or platform!
 
 Since this is an Open Source / Free Software project that I also give away for
 free (as in beer, free as in gratis, free as in libre), I'm unable to provide
 unlimited support. Please consider donating funds, hardware, virtual machines,
 and other resources. For specific needs, you could perhaps sponsor a feature!
 
-###You didn't answer my question, or I have a question!
+### You didn't answer my question, or I have a question!
 
 Contact me through my [technical blog](https://ttboj.wordpress.com/contact/)
 and I'll do my best to help. If you have a good question, please remind me to
 add my answer to this documentation!
 
-##Reference
+## Reference
 Please note that there are a number of undocumented options. For more
 information on these options, please view the source at:
 [https://github.com/purpleidea/puppet-ipa/](https://github.com/purpleidea/puppet-ipa/).
 If you feel that a well used option needs documenting here, please contact me.
 
-###Overview of classes and types
+### Overview of classes and types
 Please note that the most common, user facing classes and types are documented,
 while there may be many other undocumented classes and types that are used
 internally by other classes and types. These will be documented as time allows.
@@ -347,20 +347,20 @@ internally by other classes and types. These will be documented as time allows.
 * [ipa::server::user](#ipaserveruser): User type for each FreeIPA user.
 * [ipa::client::deploy](#ipaclientdeploy): Client class to deploy types.
 
-###ipa::server
+### ipa::server
 This is the main class to be used for IPA server installation. It is used for
 both simple standalone FreeIPA servers, and for complex multi-master scenarios.
 
-####`hostname`
+#### `hostname`
 The hostname of the IPA server. This defaults to _$::hostname_.
 
-####`domain`
+#### `domain`
 The domain of the IPA server and of the cluster. This defaults to _$::domain_.
 
-####`realm`
+#### `realm`
 The realm of the cluster. This defaults to _upcase($domain)_.
 
-####`vip`
+#### `vip`
 The virtual IP address to be used for the cluster distributed lock manager.
 This option can be used in conjunction with the _vrrp_ option, but it does not
 require it. If you don't want to provide a virtual ip, but you do want to
@@ -368,91 +368,91 @@ enforce that certain operations only run on one host, then you can set this
 option to be the ip address of an arbitrary host in your cluster. Keep in mind
 that if that host is down, certain options won't ever occur.
 
-####`peers`
+#### `peers`
 Specify the peering topology manually in dictionary form. Each dictionary value
 should be an array of the peers to connect to from the originating key.
 
-####`topology`
+#### `topology`
 The topology algorithm to use when setting up mult-master cluster
 automatically. A few default algorithms are included with Puppet-IPA. They are:
 _ring_, _flat_. If you'd like to include an algorithm that generates a
 different topology, it is easy to drop one in! Please contact me with the
 details!
 
-####`topology_arguments`
+#### `topology_arguments`
 A list of arguments to pass to the topology algorithm. Not all topology
 algorithms support this, however it can be very useful so that it's easy to
 generalize certain algorithms in the same function in terms of these variables.
 
-####`dm_password`
+#### `dm_password`
 The dm_password in plaintext. It is recommended that you use a better mechanism
 for handling secrets. Please see:
 [Securely managing secrets for FreeIPA with Puppet](https://ttboj.wordpress.com/2014/06/06/securely-managing-secrets-for-freeipa-with-puppet/).
 
-####`admin_password`
+#### `admin_password`
 The admin_password in plaintext. It is recommended that you use a better method
 for handling secrets. Please see:
 [Securely managing secrets for FreeIPA with Puppet](https://ttboj.wordpress.com/2014/06/06/securely-managing-secrets-for-freeipa-with-puppet/).
 
-####`gpg_recipient`
+#### `gpg_recipient`
 The GPG recipient ID of your public key goes here. This is a valid _-r_ value
 for the _gpg_ command line tool.
 
-####`gpg_publickey`
+#### `gpg_publickey`
 This is the value of your GPG public key, or a _puppet:///_ uri pointing to the
 file. This can't be used in conjunction with the `gpg_keyserver` option.
 
-####`gpg_keyserver`
+#### `gpg_keyserver`
 This is the value of the GPG keyserver of your choice. You can use a public one
 such as _hkp://keys.gnupg.net_ or you can use your own private keyserver.
 
-####`gpg_sendemail`
+#### `gpg_sendemail`
 Do you want to mail out the _dm_ and _admin_ passwords encrypted with your GPG
 key or not? Defaults to _false_.
 
-####`idstart`
+#### `idstart`
 The FreeIPA _idstart_ value to use. This is the starting id for users created.
 This comes with a mostly sensible default, but recommendations are welcome.
 
-####`idmax`
+#### `idmax`
 The FreeIPA _idmax_ value to use.
 
-####`email_domain`
+#### `email_domain`
 The email domain to use. This defaults to _$domain_.
 
-####`shell`
+#### `shell`
 The default user shell to assign. This default to _/bin/sh_.
 
-####`homes`
+#### `homes`
 The default home prefix. This defaults to _/home_.
 
-####`ntp`
+#### `ntp`
 Should we install an NTP server along with FreeIPA? This defaults to _false_.
 
-####`dns`
+#### `dns`
 Should we install a DNS server along with FreeIPA? This defaults to _false_.
 This must be set at install time to be used.
 
-####`dogtag`
+#### `dogtag`
 Should we install a cert server along with FreeIPA? This defaults to _false_.
 This is not currently managed by Puppet-IPA.
 
-####`email`
+#### `email`
 The email address to associate with the FreeIPA server. This defaults to
 _root@$domain_. This is important for FreeIPA, and it is used to mail out
 encrypted passwords depending on your `gpg_sendemail` settings.
 
-####`vrrp`
+#### `vrrp`
 Whether to automatically deploy and manage _Keepalived_ for use as a _DLM_ and
 for use in volume mounting, etc... Using this option requires the _vip_ option.
 
-####`shorewall`
+#### `shorewall`
 Boolean to specify whether puppet-shorewall integration should be used or not.
 
-####`again`
+#### `again`
 Do you want to use _Exec['again']_ ? This helps build your cluster quickly!
 
-####`host_excludes`
+#### `host_excludes`
 This list matches and excludes certain _hosts_ from being removed by puppet.
 The `host_excludes` are matched with bash regexp matching in: `[[ =~ ]]`. If
 the string regexp passed contains quotes, string matching is done:
@@ -466,7 +466,7 @@ automatically add the `*` character to match all. For more information on this
 option, please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`service_excludes`
+#### `service_excludes`
 This list matches and excludes certain _services_ from being removed by puppet.
 The `service_excludes` are matched with bash regexp matching in: `[[ =~ ]]`. If
 the string regexp passed contains quotes, string matching is done:
@@ -480,7 +480,7 @@ automatically add the `*` character to match all. For more information on this
 option, please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`user_excludes`
+#### `user_excludes`
 This list matches and excludes certain _users_ from being removed by puppet.
 The `user_excludes` are matched with bash regexp matching in: `[[ =~ ]]`. If
 the string regexp passed contains quotes, string matching is done:
@@ -494,7 +494,7 @@ automatically add the `*` character to match all. For more information on this
 option, please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`peer_excludes`
+#### `peer_excludes`
 This list matches and excludes certain _peers_ from being removed by puppet.
 The `peer_excludes` are matched with bash regexp matching in: `[[ =~ ]]`. If
 the string regexp passed contains quotes, string matching is done:
@@ -508,7 +508,7 @@ automatically add the `*` character to match all. This particular option is
 difference than the other excludes because it only prevents un-peering of the
 listed hosts.
 
-###ipa::server::host
+### ipa::server::host
 This is the main FreeIPA type that maps to host entries in FreeIPA. This gets
 set on the FreeIPA server (or servers) and with the associated _ipa::client_
 types and classes, will automatically setup the FreeIPA client associated with
@@ -537,55 +537,55 @@ ipa::server::host { 'test1':
 }
 ```
 
-####`domain`
+#### `domain`
 The domain of the host. This defaults to the ipa server _$domain_ variable.
 
-####`server`
+#### `server`
 Where the client will find the IPA server. This has a sensible default.
 
-####`macaddress`
+#### `macaddress`
 The [MAC address](https://en.wikipedia.org/wiki/MAC_address) of the host.
 
-####`sshpubkeys`
+#### `sshpubkeys`
 Leave this at the default for automatic public ssh keys to get transferred.
 
-####`password`
+#### `password`
 The one time password used for host provisioning. Not to be used with
 `$random`.
 
-####`random`
+#### `random`
 Generate the one time password used for host provisioning. Conflicts with
 `$password`.
 
-####`locality`
+#### `locality`
 Host description parameter for _locality_. Example: "_Montreal, Canada_".
 
-####`location`
+#### `location`
 Host description parameter for _location_. Example: "_Lab 42_".
 
-####`platform`
+#### `platform`
 Host description parameter for hardware _platform_. Example: "_Lenovo X201_".
 
-####`osstring`
+#### `osstring`
 Host description parameter for _os string_. Example: "_CentOS 6.5_".
 
-####`comments`
+#### `comments`
 Host description parameter for _comments_. Example: "_NFS Server_".
 
-####`admin`
+#### `admin`
 Should this client get the admin tools installed ?
 
-####`watch`
+#### `watch`
 Manage all changes to this resource, reverting others if this is true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`modify`
+#### `modify`
 Modify this resource on puppet changes or not ? Do so if true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-###ipa::server::service
+### ipa::server::service
 This is the main FreeIPA type that maps to service entries in FreeIPA. This is
 set on the FreeIPA server (or servers) and with the associated _ipa::client_
 types and classes, will automatically setup the FreeIPA service associated with
@@ -599,42 +599,42 @@ ipa::server::service { 'nfs':	# this $name should match nfs::server => $ipa
 }
 ```
 
-####`service`
+#### `service`
 The service string. Common examples include: _nfs_, _HTTP_, _ldap_.
 
-####`host`
+#### `host`
 The hostname where the service will reside.
 
-####`domain`
+#### `domain`
 The domain of the host where the service will reside.
 
-####`realm`
+#### `realm`
 The realm of the host where the service will reside.
 
-####`principal`
+#### `principal`
 Specify the desired principal of this service, overriding the principal that
 can be ascertained by using the above values.
 
-####`server`
+#### `server`
 Where the client will find the IPA server. This has a sensible default.
 
-####`pactype`
+#### `pactype`
 The service _pac type_. Bad values are silently discarded, `[]` is _NONE_.
 
-####`watch`
+#### `watch`
 Manage all changes to this resource, reverting others if this is true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`modify`
+#### `modify`
 Modify this resource on puppet changes or not ? Do so if true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`comment`
+#### `comment`
 A comment field that you can use however you want.
 
-###ipa::server::user
+### ipa::server::user
 This is the main FreeIPA type that maps to user entries in FreeIPA. This is set
 on the FreeIPA server (or servers) and creates user entries which can be seen
 in the FreeIPA LDAP database, and which are then available on IPA clients. Here
@@ -672,129 +672,129 @@ ipa::server::user { 'aturing/admin@EXAMPLE.COM':
 }
 ```
 
-####`login`
+#### `login`
 The login of this user. In the principal, the pattern is:
 `login/instance@REALM`.
 
-####`instance`
+#### `instance`
 The instance of this user. In the principal, the pattern is:
 `login/instance@REALM`.
 
-####`domain`
+#### `domain`
 The domain associated with the user. Uppercase version can be used as the realm
 default.
 
-####`realm`
+#### `realm`
 The realm of this user. In the principal, the pattern is:
 `login/instance@REALM`.
 
-####`principal`
+#### `principal`
 Specify the desired principal of this user, overriding the principal that
 can be ascertained by using the above values.
 
-####`first`
+#### `first`
 First name of user. Required.
 
-####`last`
+#### `last`
 Last name of user. Required.
 
-####`cn`
+#### `cn`
 Full name of user. Defaults to: "_$first $last_".
 
-####`displayname`
+#### `displayname`
 Display name of user. Defaults to: "_$first $last_".
 
-####`initials`
+#### `initials`
 Initials of user. Defaults to: "_$first[0] $last[0]_".
 
-####`email`
+#### `email`
 Email address of user.
 
-####`gecos`
+#### `gecos`
 Legacy field. Can be set manually if needed.
 
-####`uid`
+#### `uid`
 UID value for user. By default this is automatically assigned.
 
-####`gid`
+#### `gid`
 GID value for user. By default this is automatically assigned.
 
-####`shell`
+#### `shell`
 Shell for user. By default this is automatically assigned.
 
-####`home`
+#### `home`
 Home dir for user. By default this is automatically assigned.
 
-####`sshpubkeys`
+#### `sshpubkeys`
 Public SSH keys for the user.
 
-####`random`
+#### `random`
 Set to _true_ to have the user password auto generated.
 
-####`password_file`
+#### `password_file`
 Save user password to a file. The file is in: _${vardir}/ipa/users/passwords/_.
 
-####`password_mail`
+#### `password_mail`
 Mail out a GPG encrypted password to the admin.
 *TODO*: this option is not yet implemented.
 
-####`street`
+#### `street`
 The users street address.
 
-####`city`
+#### `city`
 The users city.
 
-####`state`
+#### `state`
 The users state or province.
 
-####`postalcode`
+#### `postalcode`
 The users zip or postal code.
 
-####`phone`
+#### `phone`
 The users phone number. Can be an array of numbers.
 
-####`mobile`
+#### `mobile`
 The users mobile number. Can be an array of numbers.
 
-####`pager`
+#### `pager`
 The users pager number. Can be an array of numbers. Users with pager numbers
 are particularly cool.
 
-####`fax`
+#### `fax`
 The users fax number. Can be an array of numbers.
 
-####`jobtitle`
+#### `jobtitle`
 The users job title. Silly titles are allowed.
 
-####`orgunit`
+#### `orgunit`
 The users organization unit, otherwise known as a department.
 
-####`manager`
+#### `manager`
 The users manager. Should match an existing FreeIPA user name.
 
-####`carlicense`
+#### `carlicense`
 The users car license string. FreeIPA created these fields, I just wrap them.
 
-####`watch`
+#### `watch`
 Manage all changes to this resource, reverting others if this is true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`modify`
+#### `modify`
 Modify this resource on puppet changes or not ? Do so if true. For more
 information on this option please read:
 [Hybrid management of FreeIPA types with Puppet](https://ttboj.wordpress.com/2014/07/24/hybrid-management-of-freeipa-types-with-puppet/).
 
-####`comment`
+#### `comment`
 A comment field that you can use however you want.
 
-###ipa::client::deploy
+### ipa::client::deploy
 Include this class to deploy the client host itself and any services. The
 necessary information will automatically get exported from the FreeIPA server.
 This class takes care of fetching this information through exported resources,
 and safely running _ipa-getkeytab_ so that the admin sees an automatic process.
 
-##Examples
+## Examples
 For example configurations, please consult the [examples/](https://github.com/purpleidea/puppet-ipa/tree/master/examples)
 directory in the git source repository. It is available from:
 
@@ -804,7 +804,7 @@ It is also available from:
 
 [https://gitorious.org/purpleidea/puppet-ipa/source/examples](https://gitorious.org/purpleidea/puppet-ipa/source/examples)
 
-##Limitations
+## Limitations
 
 This module has been tested against open source Puppet 3.2.4 and higher.
 
@@ -830,7 +830,7 @@ The multi-distro architecture has been chosen to easily support new additions.
 Most platforms and versions will only require a change to the yaml based data/
 folder.
 
-##Development
+## Development
 
 This is my personal project that I work on in my free time.
 Donations of funding, hardware, virtual machines, and other resources are
@@ -841,7 +841,7 @@ You can follow along [on my technical blog](https://ttboj.wordpress.com/).
 
 To report any bugs, please [contact me](https://ttboj.wordpress.com/contact/).
 
-##Author
+## Author
 
 Copyright (C) 2012-2013+ James Shubin
 
